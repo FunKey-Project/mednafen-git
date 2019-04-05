@@ -823,7 +823,7 @@ void Video_Init(MDFNGI *gi)
 
 
  if(vinf->hw_available)
-  flags |= SDL_HWSURFACE | SDL_DOUBLEBUF;
+  flags |= SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME;
 
  if(_fullscreen)
   flags |= SDL_FULLSCREEN;
@@ -962,14 +962,16 @@ void Video_Init(MDFNGI *gi)
   MDFN_printf(_("Warning:  Destination rectangle exceeds screen dimensions.  This is ok if you really do want the clipping...\n"));
  }
 
- if(gi && gi->name.size() > 0)
+ /*if(gi && gi->name.size() > 0)
  {
   const char* gics = gi->name.c_str();
 
   SDL_WM_SetCaption(gics, gics);
  }
- else
+ else{
   SDL_WM_SetCaption("Mednafen", "Mednafen");
+ }*/
+ SDL_WM_SetCaption("Game", "Game");
 
  int rs, gs, bs, as;
 
