@@ -823,10 +823,13 @@ void Video_Init(MDFNGI *gi)
 
 
  if(vinf->hw_available)
-  flags |= SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME;
+  flags |= SDL_HWSURFACE | SDL_DOUBLEBUF;
 
  if(_fullscreen)
   flags |= SDL_FULLSCREEN;
+
+//Remove Window Border
+flags |= SDL_NOFRAME;
 
  vdriver = MDFN_GetSettingI("video.driver");
 
@@ -890,9 +893,9 @@ void Video_Init(MDFNGI *gi)
 
  if(_fullscreen)
  {
-  if(!screen || cur_xres != _video.xres || cur_yres != _video.yres || cur_flags != flags || curbpp != desbpp)
+  if(!hw_screen || cur_xres != _video.xres || cur_yres != _video.yres || cur_flags != flags || curbpp != desbpp)
   {
-   if(!(screen = SDL_SetVideoMode(_video.xres ? _video.xres : best_xres, _video.yres ? _video.yres : best_yres, desbpp, flags)))
+   if(!(hw_screen = SDL_SetVideoMode(_video.xres ? _video.xres : best_xres, _video.yres ? _video.yres : best_yres, desbpp, flags)))
    {
     throw MDFN_Error(0, "%s", SDL_GetError());
    }
@@ -901,12 +904,13 @@ void Video_Init(MDFNGI *gi)
  else
  {
   GenerateDestRect();
-  if(!screen || cur_xres != screen_dest_rect.w || cur_yres != screen_dest_rect.h || cur_flags != flags || curbpp != desbpp)
+  if(!hw_screen || cur_xres != screen_dest_rect.w || cur_yres != screen_dest_rect.h || cur_flags != flags || curbpp != desbpp)
   {
-   if(!(screen = SDL_SetVideoMode(screen_dest_rect.w, screen_dest_rect.h, desbpp, flags)))
+   if(!(hw_screen = SDL_SetVideoMode(screen_dest_rect.w, screen_dest_rect.h, desbpp, flags)))
    {
     throw MDFN_Error(0, "%s", SDL_GetError());
    }
+   screen = SDL_CreateRGBSurface(SDL_SWSURFACE, screen_dest_rect.w, screen_dest_rect.h, desbpp, 0, 0, 0, 0);
   }
  }
 

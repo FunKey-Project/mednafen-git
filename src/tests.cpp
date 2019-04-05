@@ -766,6 +766,7 @@ void NO_INLINE NO_CLONE TestGCC80631(void)
  assert(TestGCC80631_Sub(p) == 0);
 }
 
+#ifdef BUGGY_TEST_GCC81740
 NO_INLINE NO_CLONE void TestGCC81740_Sub(int* p, unsigned count)
 {
  static const int good[20] = { 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 10, 5, 6, 7, 8, 15, 10, 11, 12, 13 };
@@ -791,6 +792,7 @@ NO_INLINE NO_CLONE void TestGCC81740(void)
 
  TestGCC81740_Sub(&v[0][0], sizeof(v) / sizeof(int));
 }
+#endif
 
 
 template<typename A, typename B>
@@ -2045,7 +2047,9 @@ bool MDFN_RunMathTests(void)
  TestGCC70941();
  TestGCC71488();
  TestGCC80631();
+ #ifdef BUGGY_TEST_GCC81740
  TestGCC81740();
+ #endif
 
  TestModTern();
  TestBWNotMask31GTZ();
