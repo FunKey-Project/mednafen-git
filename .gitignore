@@ -1,0 +1,14 @@
+*.o
+src/mednafen
+*.a
+.deps
+*.Po
+.dirstamp
+Makefile
+config.log
+config.status
+*~
+*.cache
+po/Makefile.in
+po/POTFILES
+.dirstamp
