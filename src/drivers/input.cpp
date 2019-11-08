@@ -836,6 +836,13 @@ void Input_Event(const SDL_Event *event)
 	 //printf("Down: %3u\n", event->key.keysym.sym);
 	 size_t s = event->key.keysym.sym;
 
+	   /// Special case: menu FunKey
+	   if(s == SDLK_q){
+	    printf("Launching menu\n");
+	    run_menu_loop();
+	    break;
+	   }
+
 	 if(s < MKK_COUNT)
 	 {
           keys_untouched[s] = (keys_untouched[s] & 0x7F) | 0x01;

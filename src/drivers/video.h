@@ -1,6 +1,11 @@
 #ifndef __MDFN_DRIVERS_VIDEO_H
 #define __MDFN_DRIVERS_VIDEO_H
 
+#include <SDL.h>
+
+#define RES_HW_SCREEN_HORIZONTAL  240
+#define RES_HW_SCREEN_VERTICAL    240
+
 enum
 {
  VIDEOIP_OFF = 0,	// Off should always be 0 here.
@@ -31,6 +36,8 @@ void Video_Init(MDFNGI *gi);
 
 // Called from the main thread
 void Video_Kill(void);
+
+void SDL_Rotate_270(SDL_Surface * virtual_hw_surface, SDL_Surface * hw_surface);
 
 #if 0
 // Called from the game thread

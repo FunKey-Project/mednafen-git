@@ -46,6 +46,12 @@
 #include "2xSaI.h"
 #endif
 
+//#define BLACKER_BLACKS
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define ABS(x) (((x) < 0) ? (-x) : (x))
+
 class SDL_to_MDFN_Surface_Wrapper : public MDFN_Surface
 {
  public:
@@ -150,7 +156,7 @@ static const MDFNSetting GlobalVideoSettings[] =
  { "video.driver", MDFNSF_NOFLAGS, gettext_noop("Video output method/driver."), NULL, MDFNST_ENUM, "opengl", NULL, NULL, NULL, NULL, VDriver_List },
 
  { "video.fs", MDFNSF_NOFLAGS, gettext_noop("Enable fullscreen mode."), NULL, MDFNST_BOOL, "0", },
- { "video.glvsync", MDFNSF_NOFLAGS, gettext_noop("Attempt to synchronize OpenGL page flips to vertical retrace period."), 
+ { "video.glvsync", MDFNSF_NOFLAGS, gettext_noop("Attempt to synchronize OpenGL page flips to vertical retrace period."),
 			       gettext_noop("Note: Additionally, if the environment variable \"__GL_SYNC_TO_VBLANK\" does not exist, then it will be created and set to the value specified for this setting.  This has the effect of forcibly enabling or disabling vblank synchronization when running under Linux with NVidia's drivers."),
 				MDFNST_BOOL, "1" },
 
@@ -210,7 +216,7 @@ static const MDFNSetting_EnumList Special_List[] =
     { "nn3x",	NTVB_NN3X, "Nearest-neighbor 3x" },
     { "nn4x",	NTVB_NN4X, "Nearest-neighbor 4x" },
     { "nny2x",	NTVB_NNY2X, "Nearest-neighbor 2x, y axis only" },
-    { "nny3x",	NTVB_NNY3X, "Nearest-neighbor 3x, y axis only" }, 
+    { "nny3x",	NTVB_NNY3X, "Nearest-neighbor 3x, y axis only" },
     { "nny4x",	NTVB_NNY4X, "Nearest-neighbor 4x, y axis only" },
 
     { NULL, 0 },
@@ -392,7 +398,7 @@ static struct ScalerDefinition
 	int id;
 	int xscale;
 	int yscale;
-} Scalers[] = 
+} Scalers[] =
 {
 	{ NTVB_HQ2X, 2, 2 },
 	{ NTVB_HQ3X, 3, 3 },
@@ -425,7 +431,8 @@ static int cur_xres, cur_yres, cur_flags;
 
 static ScalerDefinition *CurrentScaler = NULL;
 
-static SDL_Surface *screen = NULL;
+SDL_Surface *screen = NULL;
+SDL_Surface *hw_screen = NULL;
 static OpenGL_Blitter *ogl_blitter = NULL;
 static SDL_Surface *IconSurface=NULL;
 
@@ -688,7 +695,7 @@ int VideoResize(int nw, int nh)
 }
 #endif
 
-static bool weset_glstvb = false; 
+static bool weset_glstvb = false;
 static uint32 real_rs, real_gs, real_bs, real_as;
 
 void Video_Init(MDFNGI *gi)
@@ -752,7 +759,7 @@ void Video_Init(MDFNGI *gi)
   {
    #if HAVE_PUTENV
    static char gl_pe_string[] = "__GL_SYNC_TO_VBLANK=1";
-   putenv(gl_pe_string); 
+   putenv(gl_pe_string);
    #elif HAVE_SETENV
    setenv("__GL_SYNC_TO_VBLANK", "1", 1);
    #endif
@@ -761,7 +768,7 @@ void Video_Init(MDFNGI *gi)
   {
    #if HAVE_PUTENV
    static char gl_pe_string[] = "__GL_SYNC_TO_VBLANK=0";
-   putenv(gl_pe_string); 
+   putenv(gl_pe_string);
    #elif HAVE_SETENV
    setenv("__GL_SYNC_TO_VBLANK", "0", 1);
    #endif
@@ -899,6 +906,10 @@ flags |= SDL_NOFRAME;
    {
     throw MDFN_Error(0, "%s", SDL_GetError());
    }
+   screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _video.xres ? _video.xres : best_xres, _video.yres ? _video.yres : best_yres, desbpp, 0, 0, 0, 0);
+    if(screen == NULL){
+        throw MDFN_Error(0, "ERROR Could not create screen: %s\n", SDL_GetError());
+    }
   }
  }
  else
@@ -1013,7 +1024,7 @@ flags |= SDL_NOFRAME;
 
  /* HQXX only supports this pixel format, sadly, and other pixel formats
     can't be easily supported without rewriting the filters.
-    We do conversion to the real screen format in the blitting function. 
+    We do conversion to the real screen format in the blitting function.
  */
  if(CurrentScaler) {
 #ifdef WANT_FANCY_SCALERS
@@ -1343,6 +1354,117 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
    }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*void SDL_Rotate_270(SDL_Surface * dst, SDL_Surface * src){
+  int i, j;
+
+    /// --- Checking for right pixel format ---
+    //MENU_DEBUG_PRINTF("Source bpb = %d, Dest bpb = %d\n", src->format->BitsPerPixel, dst->format->BitsPerPixel);
+    if(src->format->BitsPerPixel != dst->format->BitsPerPixel){
+      printf("Error in SDL_Rotate_270, Wrong src pixel format: %d bpb, expected: 16 bpb\n", src->format->BitsPerPixel);
+      printf("Error in SDL_Rotate_270, dst (%d bpb) and src (%d bpb) have a different pitch\n",
+        dst->format->BitsPerPixel, src->format->BitsPerPixel);
+      return;
+    }
+
+    /// --- Checking if same dimensions ---
+    if(dst->w != src->w || dst->h != src->h){
+      printf("Error in SDL_Rotate_270, dst (%dx%d) and src (%dx%d) have different dimensions\n",
+        dst->w, dst->h, src->w, src->h);
+      return;
+    }
+
+
+    uint8_t *source_pixels = (uint8_t*) src->pixels;
+    uint8_t *dest_pixels = (uint8_t*) dst->pixels;
+
+  /// --- Pixel copy and rotation (270) ---
+  uint8_t *cur_p_src, *cur_p_dst;
+  for(i=0; i<src->h; i++){
+    for(j=0; j<src->w; j++){
+      cur_p_src = source_pixels + (i*src->w + j)*src->pitch;
+      cur_p_dst = dest_pixels + ((dst->h-1-j)*dst->w + i)*dst->pitch;
+      memcpy(cur_p_dst, cur_p_src, dst->pitch);
+    }
+  }
+}*/
+
+
+
+void SDL_Rotate_270(SDL_Surface * virtual_hw_surface, SDL_Surface * hw_surface){
+  int i, j;
+    uint32_t *source_pixels = (uint32_t*) virtual_hw_surface->pixels;
+    uint32_t *dest_pixels = (uint32_t*) hw_surface->pixels;
+
+    /// --- Checking for right pixel format ---
+    //MENU_DEBUG_PRINTF("Source bpb = %d, Dest bpb = %d\n", virtual_hw_surface->format->BitsPerPixel, hw_surface->format->BitsPerPixel);
+    if(virtual_hw_surface->format->BitsPerPixel != 32){
+      printf("Error in SDL_Rotate_270, Wrong virtual_hw_surface pixel format: %d bpb, expected: uint32_t bpb\n", virtual_hw_surface->format->BitsPerPixel);
+      return;
+    }
+    if(hw_surface->format->BitsPerPixel != 32){
+      printf("Error in SDL_Rotate_270, Wrong hw_surface pixel format: %d bpb, expected: uint32_t bpb\n", hw_surface->format->BitsPerPixel);
+      return;
+    }
+
+    /// --- Checking if same dimensions ---
+    if(hw_surface->w != virtual_hw_surface->w || hw_surface->h != virtual_hw_surface->h){
+      printf("Error in SDL_Rotate_270, hw_surface (%dx%d) and virtual_hw_surface (%dx%d) have different dimensions\n",
+        hw_surface->w, hw_surface->h, virtual_hw_surface->w, virtual_hw_surface->h);
+      return;
+    }
+
+  /// --- Pixel copy and rotation (270) ---
+  uint32_t *cur_p_src, *cur_p_dst;
+  for(i=0; i<virtual_hw_surface->h; i++){
+    for(j=0; j<virtual_hw_surface->w; j++){
+      cur_p_src = source_pixels + i*virtual_hw_surface->w + j;
+      cur_p_dst = dest_pixels + (hw_surface->h-1-j)*hw_surface->w + i;
+      *cur_p_dst = *cur_p_src;
+    }
+  }
+}
+
+
+
 void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int32 *LineWidths, const int InterlaceField, const bool take_ssnapshot)
 {
  MDFN_Rect src_rect;
@@ -1646,7 +1768,8 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
  if(!(cur_flags & SDL_OPENGL))
  {
   if(!OverlayOK)
-   SDL_Flip(screen);
+    SDL_Rotate_270(screen, hw_screen);
+    SDL_Flip(hw_screen);
  }
  else
  {

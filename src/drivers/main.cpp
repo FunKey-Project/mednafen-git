@@ -131,7 +131,7 @@ static const MDFNSetting DriverSettings[] =
   { "netplay.console.scale", MDFNSF_NOFLAGS, gettext_noop("Netplay chat console text scale factor."), gettext_noop("A value of 0 enables auto-scaling."), MDFNST_UINT, "1", "0", "16" },
   { "netplay.console.lines", MDFNSF_NOFLAGS, gettext_noop("Height of chat console, in lines."), NULL, MDFNST_UINT, "5", "5", "64" },
 
-  { "video.frameskip", MDFNSF_NOFLAGS, gettext_noop("Enable frameskip during emulation rendering."), 
+  { "video.frameskip", MDFNSF_NOFLAGS, gettext_noop("Enable frameskip during emulation rendering."),
 					gettext_noop("Disable for rendering code performance testing."), MDFNST_BOOL, "1" },
 
   { "video.blit_timesync", MDFNSF_NOFLAGS, gettext_noop("Enable time synchronization(waiting) for frame blitting."),
@@ -166,9 +166,9 @@ static const MDFNSetting DriverSettings[] =
   { "srwautoenable", MDFNSF_SUPPRESS_DOC, gettext_noop("DO NOT USE UNLESS YOU'RE A SPACE GOAT"/*"Automatically enable state rewinding functionality on game load."*/), gettext_noop("Use this setting with caution, as save state rewinding can have widely variable memory and CPU usage requirements among different games and different emulated systems."), MDFNST_BOOL, "0" },
 };
 
-void BuildSystemSetting(MDFNSetting *setting, const char *system_name, const char *name, const char *description, const char *description_extra, MDFNSettingType type, 
+void BuildSystemSetting(MDFNSetting *setting, const char *system_name, const char *name, const char *description, const char *description_extra, MDFNSettingType type,
 	const char *default_value, const char *minimum, const char *maximum,
-	bool (*validate_func)(const char *name, const char *value), void (*ChangeNotification)(const char *name), 
+	bool (*validate_func)(const char *name, const char *value), void (*ChangeNotification)(const char *name),
         const MDFNSetting_EnumList *enum_list)
 {
  char setting_name[256];
@@ -253,7 +253,7 @@ void MDFND_PrintError(const char *s)
  {
   if(StdoutMutex)
    MDFND_LockMutex(StdoutMutex);
- 
+
   puts(s);
   fflush(stdout);
 
@@ -366,7 +366,7 @@ static SignalInfo SignalDefs[] =
  #ifdef SIGABRT
  { SIGABRT, "SIGABRT", gettext_noop("Abort, Retry, Ignore, Fail?\n"), NULL, FALSE },
  #endif
- 
+
  #ifdef SIGUSR1
  { SIGUSR1, "SIGUSR1", gettext_noop("Killing your processes is not nice.\n"), NULL, TRUE },
  #endif
@@ -517,7 +517,7 @@ static void Stream64Test(const char* path)
    tmp = fp.get_LE<uint32>();
    assert(tmp == 0xEFBEADDE);
    fp.seek((uint64)8192 * 1024 * 1024 - 4, SEEK_CUR);
-   tmp = fp.get_LE<uint32>(); 
+   tmp = fp.get_LE<uint32>();
    assert(tmp == 0xBEBAFECA);
   }
 
@@ -528,8 +528,8 @@ static void Stream64Test(const char* path)
    tmp = fp.get_LE<uint32>();
    assert(tmp == 0xEFBEADDE);
    fp.seek((uint64)8192 * 1024 * 1024 - 4, SEEK_CUR);
-   tmp = fp.get_LE<uint32>(); 
-   assert(tmp == 0xBEBAFECA);  
+   tmp = fp.get_LE<uint32>();
+   assert(tmp == 0xBEBAFECA);
    assert(fp.tell() == (uint64)8192 * 1024 * 1024 + 4);
   }
  }
@@ -672,7 +672,7 @@ static int DoArgs(int argc, char *argv[], char **filename)
 	char *cdtestpath = NULL;
 	int mtetest = 0;
 
-        ARGPSTRUCT MDFNArgs[] = 
+        ARGPSTRUCT MDFNArgs[] =
 	{
 	 { "help", _("Show help!"), &ShowCLHelp, 0, 0 },
 	 { "remote", _("Enable remote mode with the specified stdout key(EXPERIMENTAL AND INCOMPLETE)."), 0, &dummy_remote, SUBSTYPE_STRING_ALLOC },
@@ -855,7 +855,7 @@ static int LoadGame(const char *force_module, const char *path)
 
         if(soundrecfn)
         {
- 	 if(!MDFNI_StartWAVRecord(soundrecfn, Sound_GetRate()))
+	 if(!MDFNI_StartWAVRecord(soundrecfn, Sound_GetRate()))
          {
           free(soundrecfn);
           soundrecfn = NULL;
@@ -916,6 +916,7 @@ int CloseGame(void)
 }
 
 static void GameThread_HandleEvents(void);
+static int volatile pumpWrap_disabled = 0;  // Set 'true' when menu
 static int volatile NeedExitNow = 0;	// Set 'true' in various places, including signal handler.
 double CurGameSpeed = 1;
 
@@ -976,7 +977,7 @@ int GameLoop(void *arg)
          int16 *sound;
          int32 ssize;
          bool fskip;
-        
+
 	 /* If we requested a new video mode, wait until it's set before calling the emulation code again.
 	 */
 	 while(NeedVideoChange)
@@ -1009,7 +1010,7 @@ int GameLoop(void *arg)
 	 //
 	 EmulateSpecStruct espec;
 
- 	 memset(&espec, 0, sizeof(EmulateSpecStruct));
+	 memset(&espec, 0, sizeof(EmulateSpecStruct));
 
          espec.surface = SoftFB[SoftFB_BackBuffer].surface.get();
          espec.LineWidths = SoftFB[SoftFB_BackBuffer].lw.get();
@@ -1017,9 +1018,9 @@ int GameLoop(void *arg)
 	 espec.soundmultiplier = CurGameSpeed;
 	 espec.NeedRewind = DNeedRewind;
 
- 	 espec.SoundRate = Sound_GetRate();
+	 espec.SoundRate = Sound_GetRate();
 	 espec.SoundBuf = Sound_GetEmuModBuffer(&espec.SoundBufMaxSize);
- 	 espec.SoundVolume = (double)MDFN_GetSettingUI("sound.volume") / 100;
+	 espec.SoundVolume = (double)MDFN_GetSettingUI("sound.volume") / 100;
 
 	 if(MDFN_UNLIKELY(StateRCTest))
 	 {
@@ -1101,7 +1102,7 @@ int GameLoop(void *arg)
 
 	  do
 	  {
- 	   if(fskip && ((InFrameAdvance && !NeedFrameAdvance) || GameLoopPaused))
+	   if(fskip && ((InFrameAdvance && !NeedFrameAdvance) || GameLoopPaused))
 	   {
 	    // If this frame was skipped, and the game loop is paused(IE cheat interface is active) or we're in frame advance, just blit the last
 	    // drawn, non-skipped frame so the OSD elements actually get drawn.
@@ -1110,7 +1111,7 @@ int GameLoop(void *arg)
 	    //
 	    // Possible problems with this kludgery:
 	    //	Will fail spectacularly if there is no previous successful frame.  BOOOOOOM.  (But there always should be, especially since we initialize some
-  	    //   of the video buffer and rect structures during startup)
+	    //   of the video buffer and rect structures during startup)
 	    //
             MDFND_Update(SoftFB_BackBuffer ^ 1, sound, ssize);
 	   }
@@ -1133,7 +1134,7 @@ int GameLoop(void *arg)
 	}
 
 	return(1);
-}   
+}
 
 char *GetBaseDirectory(void)
 {
@@ -1224,14 +1225,14 @@ static void GameThread_HandleEvents(void)
   switch(event->type)
   {
    case SDL_USEREVENT:
-		switch(event->user.code)
-		{
-		 case CEVT_SET_INPUT_FOCUS:
-			MDFNDHaveFocus = (bool)((char*)event->user.data1 - (char*)0);
-			//printf("%u\n", MDFNDHaveFocus);
-			break;
-		}
-		break;
+     switch(event->user.code)
+     {
+     case CEVT_SET_INPUT_FOCUS:
+       MDFNDHaveFocus = (bool)((char*)event->user.data1 - (char*)0);
+       //printf("%u\n", MDFNDHaveFocus);
+       break;
+     }
+     break;
   }
 
   Input_Event(event);
@@ -1338,6 +1339,10 @@ bool GT_ReinitSound(void)
 static bool krepeat = 0;
 void PumpWrap(void)
 {
+  if(pumpWrap_disabled){
+    return;
+  }
+
  SDL_Event event;
  SDL_Event gtevents_temp[gtevents_size];
  int numevents = 0;
@@ -1375,56 +1380,56 @@ void PumpWrap(void)
   switch(event.type)
   {
    case SDL_ACTIVEEVENT:
-   			if(event.active.state & SDL_APPINPUTFOCUS)
-			{
-			 SendCEvent_to_GT(CEVT_SET_INPUT_FOCUS, (char*)0 + (bool)event.active.gain, NULL);
-			}
-			break;
+     if(event.active.state & SDL_APPINPUTFOCUS)
+     {
+       SendCEvent_to_GT(CEVT_SET_INPUT_FOCUS, (char*)0 + (bool)event.active.gain, NULL);
+     }
+     break;
 
    case SDL_SYSWMEVENT: break;
    //case SDL_VIDEORESIZE: //if(VideoResize(event.resize.w, event.resize.h))
-			 // NeedVideoChange = -1;
-   //			 break;
+   // NeedVideoChange = -1;
+   // break;
 
    case SDL_VIDEOEXPOSE: break;
    case SDL_QUIT: NeedExitNow = 1;break;
    case SDL_USEREVENT:
-		switch(event.user.code)
-		{
-		 case CEVT_SET_STATE_STATUS: MT_SetStateStatus((StateStatusStruct *)event.user.data1); break;
-                 case CEVT_SET_MOVIE_STATUS: MT_SetMovieStatus((StateStatusStruct *)event.user.data1); break;
-		 case CEVT_WANT_EXIT:
-		     if(!Netplay_TryTextExit())
-		     {
-		      SDL_Event evt;
-		      evt.quit.type = SDL_QUIT;
-		      SDL_PushEvent(&evt);
-		     }
-		     break;
-	         case CEVT_SET_GRAB_INPUT:
-                         SDL_WM_GrabInput(*(uint8 *)event.user.data1 ? SDL_GRAB_ON : SDL_GRAB_OFF);
-                         free(event.user.data1);
-                         break;
-		 //case CEVT_TOGGLEFS: NeedVideoChange = 1; break;
-		 //case CEVT_VIDEOSYNC: NeedVideoChange = -1; break;
-		 case CEVT_SHOWCURSOR: SDL_ShowCursor(*(int *)event.user.data1); free(event.user.data1); break;
-	  	 case CEVT_DISP_MESSAGE: VideoShowMessage((char*)event.user.data1); break;
-		 default: 
-			if(numevents < gtevents_size)
-			{
-			 memcpy(&gtevents_temp[numevents], &event, sizeof(SDL_Event));
-			 numevents++;
-			}
-			break;
-		}
-		break;
-   default: 
-           if(numevents < gtevents_size)
-           {
-            memcpy(&gtevents_temp[numevents], &event, sizeof(SDL_Event));
-            numevents++;
-           }
-	   break;
+     switch(event.user.code)
+     {
+     case CEVT_SET_STATE_STATUS: MT_SetStateStatus((StateStatusStruct *)event.user.data1); break;
+     case CEVT_SET_MOVIE_STATUS: MT_SetMovieStatus((StateStatusStruct *)event.user.data1); break;
+     case CEVT_WANT_EXIT:
+       if(!Netplay_TryTextExit())
+       {
+	 SDL_Event evt;
+	 evt.quit.type = SDL_QUIT;
+	 SDL_PushEvent(&evt);
+       }
+       break;
+     case CEVT_SET_GRAB_INPUT:
+       SDL_WM_GrabInput(*(uint8 *)event.user.data1 ? SDL_GRAB_ON : SDL_GRAB_OFF);
+       free(event.user.data1);
+       break;
+       //case CEVT_TOGGLEFS: NeedVideoChange = 1; break;
+       //case CEVT_VIDEOSYNC: NeedVideoChange = -1; break;
+     case CEVT_SHOWCURSOR: SDL_ShowCursor(*(int *)event.user.data1); free(event.user.data1); break;
+     case CEVT_DISP_MESSAGE: VideoShowMessage((char*)event.user.data1); break;
+     default:
+       if(numevents < gtevents_size)
+       {
+	 memcpy(&gtevents_temp[numevents], &event, sizeof(SDL_Event));
+	 numevents++;
+       }
+       break;
+     }
+     break;
+  default:
+    if(numevents < gtevents_size)
+    {
+      memcpy(&gtevents_temp[numevents], &event, sizeof(SDL_Event));
+      numevents++;
+    }
+    break;
   }
  }
 
@@ -1562,7 +1567,7 @@ char *GetFileDialog(void)
 
  if(GetOpenFileName(&ofn))
   return(strdup(returned_fn));
- 
+
  return(NULL);
 }
 #endif
@@ -1689,7 +1694,7 @@ static bool HandleVideoChange(void)
    try
    {
     MDFNI_SetSettingB("video.fs", original_fs_setting);
-    Video_Init(CurGame);	    
+    Video_Init(CurGame);
    }
    catch(std::exception &ne)
    {
@@ -1721,7 +1726,7 @@ int main(int argc, char *argv[])
 	 }
 	 SDL_JoystickEventState(SDL_IGNORE);
 
- 	 joy_manager = new JoystickManager();
+	 joy_manager = new JoystickManager();
 	 joy_manager->SetAnalogThreshold(0.75);
 
 	 for(;;)
@@ -1744,7 +1749,7 @@ int main(int argc, char *argv[])
 	 }
 
 	 delete joy_manager;
-	 joy_manager = NULL;	 
+	 joy_manager = NULL;
 	 return(0);
 	}
 #endif
@@ -1774,7 +1779,7 @@ int main(int argc, char *argv[])
 	if(argc >= 3 && (!strcasecmp(argv[1], "-remote") || !strcasecmp(argv[1], "--remote")))
 	{
          RemoteOn = TRUE;
- 	 InitSTDIOInterface(argv[2]);
+	 InitSTDIOInterface(argv[2]);
 	}
 
 	MDFNI_printf(_("Starting Mednafen %s\n"), MEDNAFEN_VERSION);
@@ -1799,6 +1804,12 @@ int main(int argc, char *argv[])
 	 return(-1);
 	}
 	SDL_JoystickEventState(SDL_IGNORE);
+
+  if(TTF_Init()==-1) {
+    fprintf(stderr, "TTF_Init: %s\n", TTF_GetError());
+    return(-1);
+  }
+
 
 	if(!(StdoutMutex = MDFND_CreateMutex()))
 	{
@@ -1853,7 +1864,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Now the fun begins! */
-	/* Run the video and event pumping in the main thread, and create a 
+	/* Run the video and event pumping in the main thread, and create a
 	   secondary thread to run the game in(and do sound output, since we use
 	   separate sound code which should be thread safe(?)).
 	*/
@@ -1893,7 +1904,7 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 
         if(LoadGame(force_module_arg, needie))
         {
-	 uint32 pitch32 = CurGame->fb_width; 
+	 uint32 pitch32 = CurGame->fb_width;
 	 //uint32 pitch32 = round_up_pow2(CurGame->fb_width);
 	 MDFN_PixelFormat nf(MDFN_COLORSPACE_RGB, 0, 8, 16, 24);
 
@@ -1927,22 +1938,24 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 
 	 MDFND_LockMutex(VTMutex);	/* Lock mutex */
 
-         if(MDFN_UNLIKELY(NeedVideoChange))
-         {
-          Video_Kill();
+	 if(MDFN_UNLIKELY(NeedVideoChange))
+	 {
+	   Video_Kill();
 
-	  if(!HandleVideoChange())
-	  {
-	   ret = -1;
-           NeedExitNow = 1;
-           NeedVideoChange = 0;
-	   MDFND_UnlockMutex(VTMutex);   /* Unlock mutex */
-	   break;
-	  }
+	   if(!HandleVideoChange())
+	   {
+	     ret = -1;
+	     NeedExitNow = 1;
+	     NeedVideoChange = 0;
+	     MDFND_UnlockMutex(VTMutex);   /* Unlock mutex */
+	     break;
+	   }
 
-	  DidVideoChange = true;
-          NeedVideoChange = 0;
-         }
+	   init_menu_SDL();
+
+	   DidVideoChange = true;
+	   NeedVideoChange = 0;
+	 }
 
 	 {
 	  const int vtr = VTReady.load(std::memory_order_acquire);
@@ -1999,6 +2012,10 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 	joy_manager = NULL;
 
 	Video_Kill();
+
+  deinit_menu_SDL();
+
+  TTF_Quit();
 
 	SDL_Quit();
 
@@ -2197,3 +2214,913 @@ void MDFND_SetMovieStatus(StateStatusStruct *status) noexcept
  SendCEvent(CEVT_SET_MOVIE_STATUS, status, NULL);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///------------------------- MENU STUFF, to move ---------------------------
+#include <stdlib.h>
+#include <stdio.h>
+#include <SDL/SDL_ttf.h>
+#include <SDL/SDL_image.h>
+
+/// -------------- DEFINES --------------
+//#define MENU_DEBUG
+#define MENU_ERROR
+
+#ifdef MENU_DEBUG
+#define MENU_DEBUG_PRINTF(...)   printf(__VA_ARGS__);
+#else
+#define MENU_DEBUG_PRINTF(...)
+#endif //MENU_DEBUG
+
+#ifdef MENU_ERROR
+#define MENU_ERROR_PRINTF(...)   printf(__VA_ARGS__);
+#else
+#define MENU_ERROR_PRINTF(...)
+#endif //MENU_ERROR
+
+#define SCREEN_HORIZONTAL_SIZE      RES_HW_SCREEN_HORIZONTAL
+#define SCREEN_VERTICAL_SIZE        RES_HW_SCREEN_VERTICAL
+
+#define SCROLL_SPEED_PX             240 //This means no animations but also no tearing effect
+#define FPS_MENU                    30
+
+#define MENU_ZONE_WIDTH             SCREEN_HORIZONTAL_SIZE
+#define MENU_ZONE_HEIGHT            SCREEN_VERTICAL_SIZE
+
+#define MENU_FONT_NAME_TITLE        "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_SIZE_TITLE        22
+#define MENU_FONT_NAME_INFO         "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_SIZE_INFO         16
+#define MENU_FONT_NAME_SMALL_INFO   "/usr/games/menu_resources/OpenSans-Regular.ttf"
+#define MENU_FONT_SIZE_SMALL_INFO   13
+#define MENU_PNG_BG_PATH            "/usr/games/menu_resources/zone_bg.png"
+
+#define GRAY_MAIN_R                 85
+#define GRAY_MAIN_G                 85
+#define GRAY_MAIN_B                 85
+#define WHITE_MAIN_R                236
+#define WHITE_MAIN_G                236
+#define WHITE_MAIN_B                236
+
+#define MAX_SAVE_SLOTS              9
+
+#define MAXPATHLEN                  512
+
+/// -------------- STATIC VARIABLES --------------
+extern SDL_Surface *screen;
+SDL_Surface *virtual_hw_screen;  // this one is not rotated
+extern SDL_Surface *hw_screen;
+SDL_Surface * draw_screen;
+
+static int backup_key_repeat_delay, backup_key_repeat_interval;
+static SDL_Surface * backup_hw_screen = NULL;
+
+static TTF_Font *menu_title_font = NULL;
+static TTF_Font *menu_info_font = NULL;
+static TTF_Font *menu_small_info_font = NULL;
+static SDL_Surface ** menu_zone_surfaces = NULL;
+static int * idx_menus = NULL;
+static int nb_menu_zones = 0;
+
+static int stop_menu_loop = 0;
+static int menu_init_ok = 0;
+
+static SDL_Color text_color = {GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B};
+static int padding_y_from_center_menu_zone = 18;
+static uint16_t width_progress_bar = 100;
+static uint16_t height_progress_bar = 20;
+static uint16_t x_volume_bar = 0;
+static uint16_t y_volume_bar = 0;
+static uint16_t x_brightness_bar = 0;
+static uint16_t y_brightness_bar = 0;
+
+int volume_percentage = 0;
+int brightness_percentage = 0;
+
+int savestate_slot = 0;
+
+/// -------------- FUNCTIONS DECLARATION --------------
+
+/// -------------- FUNCTIONS IMPLEMENTATION --------------
+void init_menu_SDL(){
+    if(menu_init_ok){
+      MENU_DEBUG_PRINTF("Menu already initiated\n");
+      return;
+    }
+
+    /// ----- Loading the fonts -----
+    menu_title_font = TTF_OpenFont(MENU_FONT_NAME_TITLE, MENU_FONT_SIZE_TITLE);
+    if(!menu_title_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_TITLE, SDL_GetError());
+    }
+    menu_info_font = TTF_OpenFont(MENU_FONT_NAME_INFO, MENU_FONT_SIZE_INFO);
+    if(!menu_info_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_INFO, SDL_GetError());
+    }
+    menu_small_info_font = TTF_OpenFont(MENU_FONT_NAME_SMALL_INFO, MENU_FONT_SIZE_SMALL_INFO);
+    if(!menu_small_info_font){
+        MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_SMALL_INFO, SDL_GetError());
+    }
+
+    /// ----- Copy virtual_hw_screen at init ------
+    virtual_hw_screen = screen;
+    backup_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+    if(backup_hw_screen == NULL){
+        MENU_ERROR_PRINTF("ERROR Could not create backup_hw_screen: %s\n", SDL_GetError());
+    }
+    draw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+    if(draw_screen == NULL){
+        MENU_ERROR_PRINTF("ERROR Could not create draw_screen: %s\n", SDL_GetError());
+    }
+
+    /// ------ Save prev key repeat params and set new Key repeat -------
+    SDL_GetKeyRepeat(&backup_key_repeat_delay, &backup_key_repeat_interval);
+    if(SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL)){
+        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    }
+
+    /// ------ Init Menu zones ------
+    init_menu_zones();
+
+    menu_init_ok = 1;
+}
+
+void deinit_menu_SDL(){
+    /// ------ Close font -------
+    TTF_CloseFont(menu_title_font);
+    TTF_CloseFont(menu_info_font);
+    TTF_CloseFont(menu_small_info_font);
+
+    /// ------ Free Surfaces -------
+    for(int i=0; i < nb_menu_zones; i++){
+        SDL_FreeSurface(menu_zone_surfaces[i]);
+    }
+    nb_menu_zones = 0;
+    free(idx_menus);
+    SDL_FreeSurface(backup_hw_screen);
+    SDL_FreeSurface(draw_screen);
+
+    /// ------ reset initial key repeat values ------
+    if(SDL_EnableKeyRepeat(backup_key_repeat_delay, backup_key_repeat_interval)){
+        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    }
+}
+
+
+void draw_progress_bar(SDL_Surface * surface, uint16_t x, uint16_t y, uint16_t width,
+                        uint16_t height, uint8_t percentage, uint16_t nb_bars){
+    /// ------ Init Variables ------
+    uint16_t line_width = 1; //px
+    uint16_t padding_bars_ratio = 3;
+    uint16_t nb_full_bars = 0;
+
+    /// ------ Check values ------
+    percentage = (percentage > 100)?100:percentage;
+    x = (x > (surface->w-1))?(surface->w-1):x;
+    y = (y > surface->h-1)?(surface->h-1):y;
+    width = (width < line_width*2+1)?(line_width*2+1):width;
+    width = (width > surface->w-x-1)?(surface->w-x-1):width;
+    height = (height < line_width*2+1)?(line_width*2+1):height;
+    height = (height > surface->h-y-1)?(surface->h-y-1):height;
+    uint16_t nb_bars_max = ( width * padding_bars_ratio  /  (line_width*2+1) + 1 ) / (padding_bars_ratio+1);
+    nb_bars = (nb_bars > nb_bars_max)?nb_bars_max:nb_bars;
+    uint16_t bar_width = (width / nb_bars)*padding_bars_ratio/(padding_bars_ratio+1)+1;
+    uint16_t bar_padding_x = bar_width/padding_bars_ratio;
+    nb_full_bars = nb_bars*percentage/100;
+
+    /// ------ draw full bars ------
+    for (int i = 0; i < nb_full_bars; ++i)
+    {
+        /// ---- draw one bar ----
+        //MENU_DEBUG_PRINTF("Drawing filled bar %d\n", i);
+        SDL_Rect rect = {x+ i*(bar_width +bar_padding_x),
+            y, bar_width, height};
+        SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B));
+    }
+
+    /// ------ draw full bars ------
+    for (int i = 0; i < (nb_bars-nb_full_bars); ++i)
+    {
+        /// ---- draw one bar ----
+        //MENU_DEBUG_PRINTF("Drawing empty bar %d\n", i);
+        SDL_Rect rect = {x+ i*(bar_width +bar_padding_x) + nb_full_bars*(bar_width +bar_padding_x),
+            y, bar_width, height};
+        SDL_FillRect(surface, &rect, SDL_MapRGB(surface->format, GRAY_MAIN_R, GRAY_MAIN_G, GRAY_MAIN_B));
+
+        SDL_Rect rect2 = {x+ i*(bar_width +bar_padding_x) + line_width + nb_full_bars*(bar_width +bar_padding_x),
+            y + line_width, bar_width - line_width*2, height - line_width*2};
+        SDL_FillRect(surface, &rect2, SDL_MapRGB(surface->format, WHITE_MAIN_R, WHITE_MAIN_R, WHITE_MAIN_R));
+    }
+
+
+}
+
+
+void add_menu_zone(ENUM_MENU_TYPE menu_type){
+    /// ------ Increase nb of menu zones -------
+    nb_menu_zones++;
+
+    /// ------ Realoc idx Menus array -------
+    if(!idx_menus){
+        idx_menus = (int*) malloc(nb_menu_zones*sizeof(int));
+        menu_zone_surfaces = (SDL_Surface**) malloc(nb_menu_zones*sizeof(SDL_Surface*));
+    }
+    else{
+        int *temp = (int*) realloc(idx_menus, nb_menu_zones*sizeof(int));
+        idx_menus = temp;
+        menu_zone_surfaces = (SDL_Surface**) realloc(menu_zone_surfaces, nb_menu_zones*sizeof(SDL_Surface*));
+    }
+    idx_menus[nb_menu_zones-1] = menu_type;
+
+    /// ------ Reinit menu surface with height increased -------
+    menu_zone_surfaces[nb_menu_zones-1] = IMG_Load(MENU_PNG_BG_PATH);
+    if(!menu_zone_surfaces[nb_menu_zones-1]) {
+        MENU_ERROR_PRINTF("ERROR IMG_Load: %s\n", IMG_GetError());
+    }
+    /// --------- Init Common Variables --------
+    SDL_Surface *text_surface = NULL;
+    SDL_Surface *surface = menu_zone_surfaces[nb_menu_zones-1];
+    SDL_Rect text_pos;
+
+    /// --------- Add new zone ---------
+    switch(menu_type){
+    case MENU_TYPE_VOLUME:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_VOLUME\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "VOLUME", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+
+        x_volume_bar = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - width_progress_bar)/2;
+        y_volume_bar = surface->h - MENU_ZONE_HEIGHT/2 - height_progress_bar/2 + padding_y_from_center_menu_zone;
+        draw_progress_bar(surface, x_volume_bar, y_volume_bar,
+            width_progress_bar, height_progress_bar, 0, 100/STEP_CHANGE_VOLUME);
+        break;
+    case MENU_TYPE_BRIGHTNESS:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_BRIGHTNESS\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "BRIGHTNESS", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+
+        x_brightness_bar = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - width_progress_bar)/2;
+        y_brightness_bar = surface->h - MENU_ZONE_HEIGHT/2 - height_progress_bar/2 + padding_y_from_center_menu_zone;
+        draw_progress_bar(surface, x_brightness_bar, y_brightness_bar,
+            width_progress_bar, height_progress_bar, 0, 100/STEP_CHANGE_BRIGHTNESS);
+        break;
+    case MENU_TYPE_SAVE:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_SAVE\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "SAVE", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_LOAD:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_LOAD\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "LOAD", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_ASPECT_RATIO:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_ASPECT_RATIO\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "ASPECT RATIO", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_EXIT:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_EXIT\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "EXIT GAME", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    case MENU_TYPE_POWERDOWN:
+        MENU_DEBUG_PRINTF("Init MENU_TYPE_POWERDOWN\n");
+        /// ------ Text ------
+        text_surface = TTF_RenderText_Blended(menu_title_font, "POWERDOWN", text_color);
+        text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+        text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+        SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
+        break;
+    default:
+        MENU_DEBUG_PRINTF("Warning - In add_menu_zone, unknown MENU_TYPE: %d\n", menu_type);
+        break;
+    }
+
+    /// ------ Free Surfaces -------
+    SDL_FreeSurface(text_surface);
+}
+
+void init_menu_zones(){
+    /// Init Volume Menu
+    add_menu_zone(MENU_TYPE_VOLUME);
+    /// Init Brightness Menu
+    add_menu_zone(MENU_TYPE_BRIGHTNESS);
+    /// Init Save Menu
+    add_menu_zone(MENU_TYPE_SAVE);
+    /// Init Load Menu
+    add_menu_zone(MENU_TYPE_LOAD);
+    /// Init Aspect Ratio Menu
+    //add_menu_zone(MENU_TYPE_ASPECT_RATIO);
+    /// Init Exit Menu
+    add_menu_zone(MENU_TYPE_EXIT);
+    /// Init Powerdown Menu
+    //add_menu_zone(MENU_TYPE_POWERDOWN);
+}
+
+
+void init_menu_system_values(){
+    FILE *fp;
+    char res[100];
+
+    /// ------- Get system volume percentage --------
+    fp = popen(SHELL_CMD_VOLUME_GET, "r");
+    if (fp == NULL) {
+        MENU_ERROR_PRINTF("Failed to run command %s\n", SHELL_CMD_VOLUME_GET );
+        volume_percentage = 50; ///wrong value: setting default to 50
+    }
+    else{
+        fgets(res, sizeof(res)-1, fp);
+
+        /// Check if Volume is a number (at least the first char)
+        if(res[0] < '0' || res[0] > '9'){
+            MENU_ERROR_PRINTF("Wrong return value: %s for volume cmd: %s\n",res, SHELL_CMD_VOLUME_GET);
+            volume_percentage = 50; ///wrong value: setting default to 50
+        }
+        else{
+            volume_percentage = atoi(res);
+            MENU_DEBUG_PRINTF("System volume = %d%%\n", volume_percentage);
+        }
+    }
+
+    /// ------- Get system brightness percentage -------
+    fp = popen(SHELL_CMD_BRIGHTNESS_GET, "r");
+    if (fp == NULL) {
+        MENU_ERROR_PRINTF("Failed to run command %s\n", SHELL_CMD_BRIGHTNESS_GET );
+        brightness_percentage = 50; ///wrong value: setting default to 50
+    }
+    else{
+        fgets(res, sizeof(res)-1, fp);
+
+        /// Check if brightness is a number (at least the first char)
+        if(res[0] < '0' || res[0] > '9'){
+            MENU_ERROR_PRINTF("Wrong return value: %s for volume cmd: %s\n",res, SHELL_CMD_BRIGHTNESS_GET);
+            brightness_percentage = 50; ///wrong value: setting default to 50
+        }
+        else{
+            brightness_percentage = atoi(res);
+            MENU_DEBUG_PRINTF("System brightness = %d%%\n", brightness_percentage);
+        }
+    }
+
+    /// Get save slot from game
+    savestate_slot = (savestate_slot%MAX_SAVE_SLOTS); // security
+}
+
+void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
+    /// --------- Clear HW screen ----------
+    if(SDL_BlitSurface(backup_hw_screen, NULL, draw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not Clear draw_screen: %s\n", SDL_GetError());
+    }
+
+    /// --------- Setup Blit Window ----------
+    SDL_Rect menu_blit_window;
+    menu_blit_window.x = 0;
+    menu_blit_window.w = SCREEN_HORIZONTAL_SIZE;
+
+    /// --------- Blit prev menu Zone going away ----------
+    menu_blit_window.y = scroll;
+    menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+    if(SDL_BlitSurface(menu_zone_surfaces[prevItem], &menu_blit_window, draw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not Blit surface on virtual_hw_screen: %s\n", SDL_GetError());
+    }
+
+    /// --------- Blit new menu Zone going in (only during animations) ----------
+    if(scroll>0){
+        menu_blit_window.y = SCREEN_VERTICAL_SIZE-scroll;
+        menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], NULL, draw_screen, &menu_blit_window)){
+            MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
+        }
+    }
+    else if(scroll<0){
+        menu_blit_window.y = SCREEN_VERTICAL_SIZE+scroll;
+        menu_blit_window.h = SCREEN_VERTICAL_SIZE;
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], &menu_blit_window, draw_screen, NULL)){
+            MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
+        }
+    }
+    /// --------- No Scroll ? Blitting menu-specific info
+    else{
+        SDL_Surface * text_surface = NULL;
+        char text_tmp[40];
+        SDL_Rect text_pos;
+        char fname[MAXPATHLEN];
+        memset(fname, 0, MAXPATHLEN);
+
+        switch(idx_menus[menuItem]){
+        case MENU_TYPE_VOLUME:
+            draw_progress_bar(draw_screen, x_volume_bar, y_volume_bar,
+                            width_progress_bar, height_progress_bar, volume_percentage, 100/STEP_CHANGE_VOLUME);
+            break;
+
+        case MENU_TYPE_BRIGHTNESS:
+            draw_progress_bar(draw_screen, x_volume_bar, y_volume_bar,
+                            width_progress_bar, height_progress_bar, brightness_percentage, 100/STEP_CHANGE_BRIGHTNESS);
+            break;
+
+        case MENU_TYPE_SAVE:
+            /// ---- Write slot -----
+            sprintf(text_tmp, "IN SLOT   < %d >", savestate_slot+1);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+            SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+
+            if(menu_action){
+                sprintf(text_tmp, "Saving...");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            }
+            else{
+                if(menu_confirmation){
+                    sprintf(text_tmp, "Are you sure ?");
+                    text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                }
+                else{
+                    /// ---- Write current Save state ----
+                    /*if(mSaveState[savestate_slot].inUse)
+                    {
+                        printf("Found Save slot: %s\n", fname);
+                        text_surface = TTF_RenderText_Blended(menu_small_info_font, mSaveState[savestate_slot].filename, text_color);
+                    }
+                    else{
+                        text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+                    }*/
+                }
+            }
+            text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+            break;
+
+        case MENU_TYPE_LOAD:
+            /// ---- Write slot -----
+            sprintf(text_tmp, "FROM SLOT   < %d >", savestate_slot+1);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
+            SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+
+            if(menu_action){
+                sprintf(text_tmp, "Loading...");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            }
+            else{
+                if(menu_confirmation){
+                    sprintf(text_tmp, "Are you sure ?");
+                    text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                }
+                else{
+                    /// ---- Get current Load state ----
+                    /*if(mSaveState[savestate_slot].inUse)
+                    {
+                        printf("Found Load slot: %s\n", fname);
+                        text_surface = TTF_RenderText_Blended(menu_small_info_font, mSaveState[savestate_slot].filename, text_color);
+                    }
+                    else{
+                        text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+                    }*/
+                }
+            }
+            text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+            break;
+
+        /*case MENU_TYPE_ASPECT_RATIO:
+            sprintf(text_tmp, "<   %s   >", aspect_ratio_name[aspect_ratio]);
+            text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+            text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+            text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + padding_y_from_center_menu_zone;
+            SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+            break;*/
+
+        case MENU_TYPE_EXIT:
+        case MENU_TYPE_POWERDOWN:
+            if(menu_confirmation){
+                sprintf(text_tmp, "Are you sure ?");
+                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
+                text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
+                SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
+            }
+            break;
+        default:
+            break;
+        }
+
+        /// ------ Free Surfaces -------
+        if(text_surface)
+             SDL_FreeSurface(text_surface);
+    }
+
+    /// --------- Screen Rotate --------
+    SDL_Rotate_270(draw_screen, hw_screen);
+    /*SDL_BlitSurface(draw_screen, NULL, virtual_hw_screen, NULL);*/
+
+    /// --------- Flip Screen ----------
+    SDL_Flip(hw_screen);
+}
+
+
+void run_menu_loop()
+{
+    SDL_Event event;
+    uint32_t prev_ms = SDL_GetTicks();
+    uint32_t cur_ms = SDL_GetTicks();
+    static int menuItem=0;
+    int prevItem=menuItem;
+    int scroll=0;
+    uint8_t screen_refresh = 1;
+    char shell_cmd[100];
+    FILE *fp;
+    uint8_t menu_confirmation = 0;
+    stop_menu_loop = 0;
+    char fname[MAXPATHLEN];
+    pumpWrap_disabled = 1;
+
+    /// ------ Get init values -------
+    init_menu_system_values();
+
+    printf("after init system values \n");
+
+    /// ------ Copy currently displayed screen -------
+    if(SDL_BlitSurface(virtual_hw_screen, NULL, backup_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not copy virtual_hw_screen: %s\n", SDL_GetError());
+    }
+    /*uint16_t *dst_virtual = (uint16_t*) sal_VirtualVideoGetBuffer();
+    memcpy(backup_hw_screen->pixels, dst_virtual,
+      RES_HW_SCREEN_HORIZONTAL * RES_HW_SCREEN_VERTICAL * sizeof(uint16_t));*/
+
+    /// -------- Main loop ---------
+    while (!stop_menu_loop)
+    {
+        /// -------- Handle Keyboard Events ---------
+        if(!scroll){
+            while (SDL_PollEvent(&event))
+            switch(event.type)
+            {
+                case SDL_QUIT:
+                    NeedExitNow = 1;
+                    stop_menu_loop = 1;
+                    break;
+                case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_b:
+                        if(menu_confirmation){
+                            /// ------ Reset menu confirmation ------
+                            menu_confirmation = 0;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        /*else{
+                            stop_menu_loop = 1;
+                        }*/
+                        break;
+
+                    case SDLK_q:
+                    case SDLK_ESCAPE:
+                        stop_menu_loop = 1;
+                        break;
+
+                    case SDLK_d:
+                    case SDLK_DOWN:
+                        MENU_DEBUG_PRINTF("DOWN\n");
+                        /// ------ Start scrolling to new menu -------
+                        menuItem++;
+                        if (menuItem>=nb_menu_zones) menuItem=0;
+                        scroll=1;
+
+                        /// ------ Reset menu confirmation ------
+                        menu_confirmation = 0;
+
+                        /// ------ Refresh screen ------
+                        screen_refresh = 1;
+                        break;
+
+                    case SDLK_u:
+                    case SDLK_UP:
+                        MENU_DEBUG_PRINTF("UP\n");
+                        /// ------ Start scrolling to new menu -------
+                        menuItem--;
+                        if (menuItem<0) menuItem=nb_menu_zones-1;
+                        scroll=-1;
+
+                        /// ------ Reset menu confirmation ------
+                        menu_confirmation = 0;
+
+                        /// ------ Refresh screen ------
+                        screen_refresh = 1;
+                        break;
+
+                    case SDLK_l:
+                    case SDLK_LEFT:
+                        //MENU_DEBUG_PRINTF("LEFT\n");
+                        if(idx_menus[menuItem] == MENU_TYPE_VOLUME){
+                            MENU_DEBUG_PRINTF("Volume DOWN\n");
+                            /// ----- Compute new value -----
+                            volume_percentage = (volume_percentage < STEP_CHANGE_VOLUME)?
+                                                    0:(volume_percentage-STEP_CHANGE_VOLUME);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_BRIGHTNESS){
+                            MENU_DEBUG_PRINTF("Brightness DOWN\n");
+                            /// ----- Compute new value -----
+                            brightness_percentage = (brightness_percentage < STEP_CHANGE_BRIGHTNESS)?
+                                                    0:(brightness_percentage-STEP_CHANGE_BRIGHTNESS);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                        /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            MENU_DEBUG_PRINTF("Save Slot DOWN\n");
+                            savestate_slot = (!savestate_slot)?(MAX_SAVE_SLOTS-1):(savestate_slot-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            MENU_DEBUG_PRINTF("Load Slot DOWN\n");
+                            //idx_load_slot = (!idx_load_slot)?(MAX_SAVE_SLOTS-1):(idx_load_slot-1);
+                            savestate_slot = (!savestate_slot)?(MAX_SAVE_SLOTS-1):(savestate_slot-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        /*else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                            MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
+                            aspect_ratio = (!aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(aspect_ratio-1);
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }*/
+                        break;
+
+                    case SDLK_r:
+                    case SDLK_RIGHT:
+                        //MENU_DEBUG_PRINTF("RIGHT\n");
+                        if(idx_menus[menuItem] == MENU_TYPE_VOLUME){
+                            MENU_DEBUG_PRINTF("Volume UP\n");
+                            /// ----- Compute new value -----
+                            volume_percentage = (volume_percentage > 100 - STEP_CHANGE_VOLUME)?
+                                                    100:(volume_percentage+STEP_CHANGE_VOLUME);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_VOLUME_SET, volume_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_BRIGHTNESS){
+                            MENU_DEBUG_PRINTF("Brightness UP\n");
+                            /// ----- Compute new value -----
+                            brightness_percentage = (brightness_percentage > 100 - STEP_CHANGE_BRIGHTNESS)?
+                                                    100:(brightness_percentage+STEP_CHANGE_BRIGHTNESS);
+
+                            /// ----- Shell cmd ----
+                            sprintf(shell_cmd, "%s %d", SHELL_CMD_BRIGHTNESS_SET, brightness_percentage);
+                            fp = popen(shell_cmd, "r");
+                            if (fp == NULL) {
+                                MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                            }
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            MENU_DEBUG_PRINTF("Save Slot UP\n");
+                            savestate_slot = (savestate_slot+1)%MAX_SAVE_SLOTS;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            MENU_DEBUG_PRINTF("Load Slot UP\n");
+                            //idx_load_slot = (idx_load_slot+1)%MAX_SAVE_SLOTS;
+                            savestate_slot = (savestate_slot+1)%MAX_SAVE_SLOTS;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }
+                        /*else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                            MENU_DEBUG_PRINTF("Aspect Ratio UP\n");
+                            aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+                            /// ------ Refresh screen ------
+                            screen_refresh = 1;
+                        }*/
+                        break;
+
+                    case SDLK_a:
+                    case SDLK_RETURN:
+                        if(idx_menus[menuItem] == MENU_TYPE_SAVE){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Saving in slot %d\n", savestate_slot);
+                                /// ------ Refresh Screen -------
+                                menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
+
+                                /// ------ Save game ------
+                                /*if(SaveStateFile(mSaveState[savestate_slot].fullFilename)){
+                                    mSaveState[savestate_slot].inUse=1;
+                                }*/
+
+                                /// ----- Hud Msg -----
+
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Save game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Loading in slot %d\n", savestate_slot);
+                                /// ------ Refresh Screen -------
+                                menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
+
+                                /// ------ Load game ------
+                                /*LoadStateFile(mSaveState[savestate_slot].fullFilename);*/
+
+                                /// ----- Hud Msg -----
+
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Save game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_EXIT){
+                            MENU_DEBUG_PRINTF("Exit game\n");
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Exit game - confirmed\n");
+                                /// ----- The game should be saved here ----
+
+                                /// ----- Exit game and back to launcher ----
+                                NeedExitNow = 1;
+                                stop_menu_loop = 1;
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Exit game - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        else if(idx_menus[menuItem] == MENU_TYPE_POWERDOWN){
+                            if(menu_confirmation){
+                                MENU_DEBUG_PRINTF("Powerdown - confirmed\n");
+                                /// ----- Shell cmd ----
+                                sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+                            }
+                            else{
+                                MENU_DEBUG_PRINTF("Powerdown - asking confirmation\n");
+                                menu_confirmation = 1;
+                                /// ------ Refresh screen ------
+                                screen_refresh = 1;
+                            }
+                        }
+                        break;
+
+                    default:
+                        //MENU_DEBUG_PRINTF("Keydown: %d\n", event.key.keysym.sym);
+                        break;
+                }
+                break;
+            }
+        }
+
+        /// --------- Handle Scroll effect ---------
+        if (scroll>MENU_ZONE_HEIGHT || scroll<-MENU_ZONE_HEIGHT) {
+            prevItem=menuItem;
+            scroll=0;
+            screen_refresh = 1;
+        }
+        else if (scroll>0){
+            scroll+=SCROLL_SPEED_PX;
+            screen_refresh = 1;
+        }
+        else if (scroll<0){
+            scroll-=SCROLL_SPEED_PX;
+            screen_refresh = 1;
+        }
+
+        /// --------- Handle FPS ---------
+        cur_ms = SDL_GetTicks();
+        if(cur_ms-prev_ms < 1000/FPS_MENU){
+            SDL_Delay(1000/FPS_MENU - (cur_ms-prev_ms));
+        }
+        prev_ms = SDL_GetTicks();
+
+
+        /// --------- Refresh screen
+        if(screen_refresh){
+            menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 0);
+        }
+
+        /// --------- reset screen refresh ---------
+        screen_refresh = 0;
+
+        /// --------- re-enable pumpwrap if exiting menu -------
+        if(stop_menu_loop){
+          pumpWrap_disabled = 0;
+        }
+    }
+}

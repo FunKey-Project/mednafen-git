@@ -38,7 +38,7 @@ AC_ARG_WITH(sdl-exec-prefix,[  --with-sdl-exec-prefix=PFX Exec prefix where SDL 
     no_sdl=yes
   else
     SDL_CFLAGS=`$SDL_CONFIG $sdlconf_args --cflags`
-    SDL_LIBS=`$SDL_CONFIG $sdlconf_args --libs`
+    SDL_LIBS=`$SDL_CONFIG $sdlconf_args --libs -lSDL_ttf -lSDL_image`
 
     sdl_major_version=`$SDL_CONFIG $sdl_args --version | \
            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
