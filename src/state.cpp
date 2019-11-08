@@ -621,8 +621,8 @@ void MDFNSS_LoadSM(Stream *st, bool data_only)
 //
 //
 //
-static int SaveStateStatus[10];
-static int CurrentState = 0;
+int SaveStateStatus[10];
+int CurrentState = 0;
 static int RecentlySavedState = -1;
 
 void MDFNSS_CheckStates(void)

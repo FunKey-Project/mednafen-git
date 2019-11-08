@@ -18,6 +18,7 @@
 #include "main.h"
 #include "video.h"
 #include "menu.h"
+#include "../general.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -146,7 +147,8 @@ static uint16_t y_brightness_bar = 0;
 int volume_percentage = 0;
 int brightness_percentage = 0;
 
-int savestate_slot = 0;
+extern int SaveStateStatus[10];
+extern int CurrentState;
 
 /// -------------- FUNCTIONS DECLARATION --------------
 
@@ -433,7 +435,7 @@ void init_menu_system_values(){
     }
 
     /// Get save slot from game
-    savestate_slot = (savestate_slot%MAX_SAVE_SLOTS); // security
+    CurrentState = (CurrentState%MAX_SAVE_SLOTS); // security
 }
 
 void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
@@ -475,6 +477,7 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
         char text_tmp[40];
         SDL_Rect text_pos;
         char fname[MAXPATHLEN];
+        uint16_t limit_filename_size = 14;
         memset(fname, 0, MAXPATHLEN);
 
         switch(idx_menus[menuItem]){
@@ -490,7 +493,7 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
 
         case MENU_TYPE_SAVE:
             /// ---- Write slot -----
-            sprintf(text_tmp, "IN SLOT   < %d >", savestate_slot+1);
+            sprintf(text_tmp, "IN SLOT   < %d >", CurrentState+1);
             text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
             text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
             text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
@@ -507,14 +510,20 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
                 }
                 else{
                     /// ---- Write current Save state ----
-                    /*if(mSaveState[savestate_slot].inUse)
+                    if(SaveStateStatus[CurrentState])
                     {
-                        printf("Found Save slot: %s\n", fname);
-                        text_surface = TTF_RenderText_Blended(menu_small_info_font, mSaveState[savestate_slot].filename, text_color);
+                        printf("Found Save slot: %s\n", MDFN_MakeFName(MDFNMKF_STATE, CurrentState, NULL).c_str());
+                        strcpy(fname, MDFN_MakeFName(MDFNMKF_STATE, CurrentState, NULL).c_str());
+                        char *p = strrchr (fname, '/');
+                        char *basename = p ? p + 1 : (char *) fname;
+                        p = strchr (basename, '.'); *p = p ? 0 : *p;
+                        if(strlen(basename) > limit_filename_size){basename[limit_filename_size]=0;} //limiting size
+                        sprintf(text_tmp, "%s - %d", basename, CurrentState);
+                        text_surface = TTF_RenderText_Blended(menu_small_info_font, text_tmp, text_color);
                     }
                     else{
                         text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
-                    }*/
+                    }
                 }
             }
             text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
@@ -524,7 +533,7 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
 
         case MENU_TYPE_LOAD:
             /// ---- Write slot -----
-            sprintf(text_tmp, "FROM SLOT   < %d >", savestate_slot+1);
+            sprintf(text_tmp, "FROM SLOT   < %d >", CurrentState+1);
             text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
             text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
             text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
@@ -541,14 +550,21 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
                 }
                 else{
                     /// ---- Get current Load state ----
-                    /*if(mSaveState[savestate_slot].inUse)
+                    if(SaveStateStatus[CurrentState])
                     {
-                        printf("Found Load slot: %s\n", fname);
-                        text_surface = TTF_RenderText_Blended(menu_small_info_font, mSaveState[savestate_slot].filename, text_color);
+		        ///home/vincent/.mednafen/mcs/Super Mario Bros 3.b76f978ad3076ea67f2b0aca7399c9e9.mc0
+                        printf("Found Load slot: %s\n", MDFN_MakeFName(MDFNMKF_STATE, CurrentState, NULL).c_str());
+                        strcpy(fname, MDFN_MakeFName(MDFNMKF_STATE, CurrentState, NULL).c_str());
+                        char *p = strrchr (fname, '/');
+                        char *basename = p ? p + 1 : (char *) fname;
+                        p = strchr (basename, '.'); *p = p ? 0 : *p;
+                        if(strlen(basename) > limit_filename_size){basename[limit_filename_size]=0;} //limiting size
+                        sprintf(text_tmp, "%s - %d", basename, CurrentState);
+                        text_surface = TTF_RenderText_Blended(menu_small_info_font, text_tmp, text_color);
                     }
                     else{
                         text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
-                    }*/
+                    }
                 }
             }
             text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
@@ -719,14 +735,18 @@ void run_menu_loop()
                         }
                         else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
                             MENU_DEBUG_PRINTF("Save Slot DOWN\n");
-                            savestate_slot = (!savestate_slot)?(MAX_SAVE_SLOTS-1):(savestate_slot-1);
+                            CurrentState = (!CurrentState)?(MAX_SAVE_SLOTS-1):(CurrentState-1);
+                            MDFNI_SelectState(CurrentState);
+
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
                         else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
                             MENU_DEBUG_PRINTF("Load Slot DOWN\n");
                             //idx_load_slot = (!idx_load_slot)?(MAX_SAVE_SLOTS-1):(idx_load_slot-1);
-                            savestate_slot = (!savestate_slot)?(MAX_SAVE_SLOTS-1):(savestate_slot-1);
+                            CurrentState = (!CurrentState)?(MAX_SAVE_SLOTS-1):(CurrentState-1);
+                            MDFNI_SelectState(CurrentState);
+
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
@@ -773,14 +793,14 @@ void run_menu_loop()
                         }
                         else if(idx_menus[menuItem] == MENU_TYPE_SAVE){
                             MENU_DEBUG_PRINTF("Save Slot UP\n");
-                            savestate_slot = (savestate_slot+1)%MAX_SAVE_SLOTS;
+                            CurrentState = (CurrentState+1)%MAX_SAVE_SLOTS;
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
                         else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
                             MENU_DEBUG_PRINTF("Load Slot UP\n");
                             //idx_load_slot = (idx_load_slot+1)%MAX_SAVE_SLOTS;
-                            savestate_slot = (savestate_slot+1)%MAX_SAVE_SLOTS;
+                            CurrentState = (CurrentState+1)%MAX_SAVE_SLOTS;
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
@@ -796,17 +816,14 @@ void run_menu_loop()
                     case SDLK_RETURN:
                         if(idx_menus[menuItem] == MENU_TYPE_SAVE){
                             if(menu_confirmation){
-                                MENU_DEBUG_PRINTF("Saving in slot %d\n", savestate_slot);
+                                MENU_DEBUG_PRINTF("Saving in slot %d\n", CurrentState);
                                 /// ------ Refresh Screen -------
                                 menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
 
                                 /// ------ Save game ------
-                                /*if(SaveStateFile(mSaveState[savestate_slot].fullFilename)){
-                                    mSaveState[savestate_slot].inUse=1;
-                                }*/
+				MDFNI_SaveState(NULL, NULL, NULL, NULL, NULL);
 
                                 /// ----- Hud Msg -----
-
                                 stop_menu_loop = 1;
                             }
                             else{
@@ -818,15 +835,14 @@ void run_menu_loop()
                         }
                         else if(idx_menus[menuItem] == MENU_TYPE_LOAD){
                             if(menu_confirmation){
-                                MENU_DEBUG_PRINTF("Loading in slot %d\n", savestate_slot);
+                                MENU_DEBUG_PRINTF("Loading in slot %d\n", CurrentState);
                                 /// ------ Refresh Screen -------
                                 menu_screen_refresh(menuItem, prevItem, scroll, menu_confirmation, 1);
 
                                 /// ------ Load game ------
-                                /*LoadStateFile(mSaveState[savestate_slot].fullFilename);*/
+                                MDFNI_LoadState(NULL, NULL);
 
                                 /// ----- Hud Msg -----
-
                                 stop_menu_loop = 1;
                             }
                             else{
