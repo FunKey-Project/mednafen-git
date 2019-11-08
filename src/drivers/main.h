@@ -7,6 +7,7 @@
 #include <mednafen/Time.h>
 #include "config.h"
 #include "args.h"
+#include "menu.h"
 
 #include <SDL.h>
 #include <SDL/SDL_ttf.h>
@@ -87,7 +88,7 @@ void BuildSystemSetting(MDFNSetting *setting, const char *system_name, const cha
 
 
 
-
+#if 0
 
 typedef enum{
     MENU_TYPE_VOLUME,
@@ -140,6 +141,9 @@ void deinit_menu_SDL();
 void init_menu_zones();
 void init_menu_system_values();
 void run_menu_loop();
+
+#endif
+
 
 
 

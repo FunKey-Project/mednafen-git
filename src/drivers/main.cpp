@@ -916,8 +916,8 @@ int CloseGame(void)
 }
 
 static void GameThread_HandleEvents(void);
-static int volatile pumpWrap_disabled = 0;  // Set 'true' when menu
-static int volatile NeedExitNow = 0;	// Set 'true' in various places, including signal handler.
+int volatile pumpWrap_disabled = 0;  // Set 'true' when menu
+int volatile NeedExitNow = 0;	// Set 'true' in various places, including signal handler.
 double CurGameSpeed = 1;
 
 void MainRequestExit(void)
@@ -2270,7 +2270,7 @@ void MDFND_SetMovieStatus(StateStatusStruct *status) noexcept
 
 
 
-
+#if 0
 
 ///------------------------- MENU STUFF, to move ---------------------------
 #include <stdlib.h>
@@ -3124,3 +3124,4 @@ void run_menu_loop()
         }
     }
 }
+#endif
