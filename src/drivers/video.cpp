@@ -1768,7 +1768,8 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
  if(!(cur_flags & SDL_OPENGL))
  {
   if(!OverlayOK)
-    SDL_Rotate_270(screen, hw_screen);
+    //SDL_Rotate_270(screen, hw_screen);
+    SDL_BlitSurface(screen, NULL, hw_screen, NULL);
     SDL_Flip(hw_screen);
  }
  else
