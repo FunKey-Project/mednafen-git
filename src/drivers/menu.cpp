@@ -225,8 +225,10 @@ void deinit_menu_SDL(){
     for(int i=0; i < nb_menu_zones; i++){
         SDL_FreeSurface(menu_zone_surfaces[i]);
     }
-    nb_menu_zones = 0;
+
     free(idx_menus);
+    nb_menu_zones = 0;
+
     if(backup_hw_screen != NULL){
         SDL_FreeSurface(backup_hw_screen);
     }
@@ -463,7 +465,7 @@ void init_menu_system_values(){
     CurrentState = (CurrentState%MAX_SAVE_SLOTS); // security
 }
 
-void menu_screen_refresh(int curMenuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
+void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
     /// --------- Vars ---------
     int print_arrows = 1;
 
@@ -488,14 +490,14 @@ void menu_screen_refresh(int curMenuItem, int prevItem, int scroll, uint8_t menu
     if(scroll>0){
         menu_blit_window.y = SCREEN_VERTICAL_SIZE-scroll;
         menu_blit_window.h = SCREEN_VERTICAL_SIZE;
-        if(SDL_BlitSurface(menu_zone_surfaces[curMenuItem], NULL, draw_screen, &menu_blit_window)){
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], NULL, draw_screen, &menu_blit_window)){
             MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
         }
     }
     else if(scroll<0){
         menu_blit_window.y = SCREEN_VERTICAL_SIZE+scroll;
         menu_blit_window.h = SCREEN_VERTICAL_SIZE;
-        if(SDL_BlitSurface(menu_zone_surfaces[curMenuItem], &menu_blit_window, draw_screen, NULL)){
+        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], &menu_blit_window, draw_screen, NULL)){
             MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
         }
     }
@@ -508,7 +510,7 @@ void menu_screen_refresh(int curMenuItem, int prevItem, int scroll, uint8_t menu
         uint16_t limit_filename_size = 14;
         memset(fname, 0, MAXPATHLEN);
 
-        switch(idx_menus[curMenuItem]){
+        switch(idx_menus[menuItem]){
         case MENU_TYPE_VOLUME:
             draw_progress_bar(draw_screen, x_volume_bar, y_volume_bar,
                             width_progress_bar, height_progress_bar, volume_percentage, 100/STEP_CHANGE_VOLUME);
@@ -631,16 +633,16 @@ void menu_screen_refresh(int curMenuItem, int prevItem, int scroll, uint8_t menu
     if(print_arrows){
         /// Top arrow
         SDL_Rect pos_arrow_top;
-        pos_arrow_top.x = (virtual_hw_screen->w - img_arrow_top->w)/2;
-        pos_arrow_top.y = (virtual_hw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_top->h/2;
-        SDL_BlitSurface(img_arrow_top, NULL, virtual_hw_screen, &pos_arrow_top);
+        pos_arrow_top.x = (draw_screen->w - img_arrow_top->w)/2;
+        pos_arrow_top.y = (draw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_top->h/2;
+        SDL_BlitSurface(img_arrow_top, NULL, draw_screen, &pos_arrow_top);
 
         /// Bottom arrow
         SDL_Rect pos_arrow_bottom;
-        pos_arrow_bottom.x = (virtual_hw_screen->w - img_arrow_bottom->w)/2;
-        pos_arrow_bottom.y = virtual_hw_screen->h -
-            (virtual_hw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_bottom->h/2;
-        SDL_BlitSurface(img_arrow_bottom, NULL, virtual_hw_screen, &pos_arrow_bottom);
+        pos_arrow_bottom.x = (draw_screen->w - img_arrow_bottom->w)/2;
+        pos_arrow_bottom.y = draw_screen->h -
+            (draw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_bottom->h/2;
+        SDL_BlitSurface(img_arrow_bottom, NULL, draw_screen, &pos_arrow_bottom);
     }
 
     /// --------- Screen Rotate --------
@@ -667,6 +669,7 @@ void run_menu_loop()
     uint8_t menu_confirmation = 0;
     stop_menu_loop = 0;
     char fname[MAXPATHLEN];
+    pumpWrap_disabled = 1;
 
     /// ------ Get init values -------
     init_menu_system_values();
