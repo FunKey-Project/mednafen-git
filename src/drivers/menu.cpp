@@ -72,6 +72,7 @@
 /// -------------- DEFINES --------------
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
+#define ABS(x) (((x) < 0) ? (-x) : (x))
 
 //#define MENU_DEBUG
 #define MENU_ERROR
@@ -93,9 +94,12 @@
 
 #define SCROLL_SPEED_PX             240 //This means no animations but also no tearing effect
 #define FPS_MENU                    30
+#define ARROWS_PADDING              8
 
 #define MENU_ZONE_WIDTH             SCREEN_HORIZONTAL_SIZE
 #define MENU_ZONE_HEIGHT            SCREEN_VERTICAL_SIZE
+#define MENU_BG_SQURE_WIDTH         180
+#define MENU_BG_SQUREE_HEIGHT       140
 
 #define MENU_FONT_NAME_TITLE        "/usr/games/menu_resources/OpenSans-Bold.ttf"
 #define MENU_FONT_SIZE_TITLE        22
@@ -104,6 +108,8 @@
 #define MENU_FONT_NAME_SMALL_INFO   "/usr/games/menu_resources/OpenSans-Regular.ttf"
 #define MENU_FONT_SIZE_SMALL_INFO   13
 #define MENU_PNG_BG_PATH            "/usr/games/menu_resources/zone_bg.png"
+#define MENU_PNG_ARROW_TOP_PATH     "/usr/games/menu_resources/arrow_top.png"
+#define MENU_PNG_ARROW_BOTTOM_PATH  "/usr/games/menu_resources/arrow_bottom.png"
 
 #define GRAY_MAIN_R                 85
 #define GRAY_MAIN_G                 85
@@ -131,10 +137,12 @@ static SDL_Surface * backup_hw_screen = NULL;
 static TTF_Font *menu_title_font = NULL;
 static TTF_Font *menu_info_font = NULL;
 static TTF_Font *menu_small_info_font = NULL;
+static SDL_Surface *img_arrow_top = NULL;
+static SDL_Surface *img_arrow_bottom = NULL;
 static SDL_Surface ** menu_zone_surfaces = NULL;
 static int * idx_menus = NULL;
 static int nb_menu_zones = 0;
-
+static int menuItem = 0;
 static int stop_menu_loop = 0;
 static int menu_init_ok = 0;
 
@@ -161,6 +169,8 @@ void init_menu_SDL(){
       MENU_DEBUG_PRINTF("Menu already initiated\n");
       return;
     }
+
+    MENU_DEBUG_PRINTF("Init Menu\n");
 
     /// ----- Loading the fonts -----
     menu_title_font = TTF_OpenFont(MENU_FONT_NAME_TITLE, MENU_FONT_SIZE_TITLE);
@@ -189,13 +199,17 @@ void init_menu_SDL(){
         MENU_ERROR_PRINTF("ERROR Could not create draw_screen: %s\n", SDL_GetError());
     }
 
-    /// ------ Save prev key repeat params and set new Key repeat -------
-    SDL_GetKeyRepeat(&backup_key_repeat_delay, &backup_key_repeat_interval);
-    if(SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL)){
-        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    /// ------ Load arrows imgs -------
+    img_arrow_top = IMG_Load(MENU_PNG_ARROW_TOP_PATH);
+    if(!img_arrow_top) {
+        MENU_ERROR_PRINTF("ERROR IMG_Load: %s\n", IMG_GetError());
+    }
+    img_arrow_bottom = IMG_Load(MENU_PNG_ARROW_BOTTOM_PATH);
+    if(!img_arrow_bottom) {
+        MENU_ERROR_PRINTF("ERROR IMG_Load: %s\n", IMG_GetError());
     }
 
-    /// ------ Init Menu zones ------
+    /// ------ Init menu zones ------
     init_menu_zones();
 
     menu_init_ok = 1;
@@ -213,13 +227,15 @@ void deinit_menu_SDL(){
     }
     nb_menu_zones = 0;
     free(idx_menus);
-    SDL_FreeSurface(backup_hw_screen);
-    SDL_FreeSurface(draw_screen);
-
-    /// ------ reset initial key repeat values ------
-    if(SDL_EnableKeyRepeat(backup_key_repeat_delay, backup_key_repeat_interval)){
-        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    if(backup_hw_screen != NULL){
+        SDL_FreeSurface(backup_hw_screen);
     }
+    if(draw_screen != NULL){
+        SDL_FreeSurface(draw_screen);
+    }
+
+    SDL_FreeSurface(img_arrow_top);
+    SDL_FreeSurface(img_arrow_bottom);
 }
 
 
@@ -437,11 +453,20 @@ void init_menu_system_values(){
         }
     }
 
+    /// ------ Save prev key repeat params and set new Key repeat -------
+    SDL_GetKeyRepeat(&backup_key_repeat_delay, &backup_key_repeat_interval);
+    if(SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL)){
+        MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
+    }
+
     /// Get save slot from game
     CurrentState = (CurrentState%MAX_SAVE_SLOTS); // security
 }
 
-void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
+void menu_screen_refresh(int curMenuItem, int prevItem, int scroll, uint8_t menu_confirmation, uint8_t menu_action){
+    /// --------- Vars ---------
+    int print_arrows = 1;
+
     /// --------- Clear HW screen ----------
     if(SDL_BlitSurface(backup_hw_screen, NULL, draw_screen, NULL)){
         MENU_ERROR_PRINTF("ERROR Could not Clear draw_screen: %s\n", SDL_GetError());
@@ -463,14 +488,14 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
     if(scroll>0){
         menu_blit_window.y = SCREEN_VERTICAL_SIZE-scroll;
         menu_blit_window.h = SCREEN_VERTICAL_SIZE;
-        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], NULL, draw_screen, &menu_blit_window)){
+        if(SDL_BlitSurface(menu_zone_surfaces[curMenuItem], NULL, draw_screen, &menu_blit_window)){
             MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
         }
     }
     else if(scroll<0){
         menu_blit_window.y = SCREEN_VERTICAL_SIZE+scroll;
         menu_blit_window.h = SCREEN_VERTICAL_SIZE;
-        if(SDL_BlitSurface(menu_zone_surfaces[menuItem], &menu_blit_window, draw_screen, NULL)){
+        if(SDL_BlitSurface(menu_zone_surfaces[curMenuItem], &menu_blit_window, draw_screen, NULL)){
             MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
         }
     }
@@ -483,7 +508,7 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
         uint16_t limit_filename_size = 14;
         memset(fname, 0, MAXPATHLEN);
 
-        switch(idx_menus[menuItem]){
+        switch(idx_menus[curMenuItem]){
         case MENU_TYPE_VOLUME:
             draw_progress_bar(draw_screen, x_volume_bar, y_volume_bar,
                             width_progress_bar, height_progress_bar, volume_percentage, 100/STEP_CHANGE_VOLUME);
@@ -602,6 +627,22 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
              SDL_FreeSurface(text_surface);
     }
 
+    /// --------- Print arrows --------
+    if(print_arrows){
+        /// Top arrow
+        SDL_Rect pos_arrow_top;
+        pos_arrow_top.x = (virtual_hw_screen->w - img_arrow_top->w)/2;
+        pos_arrow_top.y = (virtual_hw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_top->h/2;
+        SDL_BlitSurface(img_arrow_top, NULL, virtual_hw_screen, &pos_arrow_top);
+
+        /// Bottom arrow
+        SDL_Rect pos_arrow_bottom;
+        pos_arrow_bottom.x = (virtual_hw_screen->w - img_arrow_bottom->w)/2;
+        pos_arrow_bottom.y = virtual_hw_screen->h -
+            (virtual_hw_screen->h - MENU_BG_SQUREE_HEIGHT)/4 - img_arrow_bottom->h/2;
+        SDL_BlitSurface(img_arrow_bottom, NULL, virtual_hw_screen, &pos_arrow_bottom);
+    }
+
     /// --------- Screen Rotate --------
     //SDL_Rotate_270(draw_screen, hw_screen);
     SDL_BlitSurface(draw_screen, NULL, hw_screen, NULL);
@@ -613,24 +654,23 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
 
 void run_menu_loop()
 {
+    MENU_DEBUG_PRINTF("Launch Menu\n");
+
     SDL_Event event;
     uint32_t prev_ms = SDL_GetTicks();
     uint32_t cur_ms = SDL_GetTicks();
-    static int menuItem=0;
-    int prevItem=menuItem;
     int scroll=0;
+    int start_scroll=0;
     uint8_t screen_refresh = 1;
     char shell_cmd[100];
     FILE *fp;
     uint8_t menu_confirmation = 0;
     stop_menu_loop = 0;
     char fname[MAXPATHLEN];
-    pumpWrap_disabled = 1;
 
     /// ------ Get init values -------
     init_menu_system_values();
-
-    printf("after init system values \n");
+    int prevItem=menuItem;
 
     /// ------ Copy currently displayed screen -------
     if(SDL_BlitSurface(virtual_hw_screen, NULL, backup_hw_screen, NULL)){
@@ -678,7 +718,7 @@ void run_menu_loop()
                         /// ------ Start scrolling to new menu -------
                         menuItem++;
                         if (menuItem>=nb_menu_zones) menuItem=0;
-                        scroll=1;
+                        start_scroll=1;
 
                         /// ------ Reset menu confirmation ------
                         menu_confirmation = 0;
@@ -693,7 +733,7 @@ void run_menu_loop()
                         /// ------ Start scrolling to new menu -------
                         menuItem--;
                         if (menuItem<0) menuItem=nb_menu_zones-1;
-                        scroll=-1;
+                        start_scroll=-1;
 
                         /// ------ Reset menu confirmation ------
                         menu_confirmation = 0;
@@ -900,17 +940,19 @@ void run_menu_loop()
         }
 
         /// --------- Handle Scroll effect ---------
+        if ((scroll>0) || (start_scroll>0)){
+            scroll+=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT-scroll);
+            start_scroll = 0;
+            screen_refresh = 1;
+        }
+        else if ((scroll<0) || (start_scroll<0)){
+            scroll-=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT+scroll);
+            start_scroll = 0;
+            screen_refresh = 1;
+        }
         if (scroll>=MENU_ZONE_HEIGHT || scroll<=-MENU_ZONE_HEIGHT) {
             prevItem=menuItem;
             scroll=0;
-            screen_refresh = 1;
-        }
-        else if (scroll>0){
-            scroll+=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT-scroll);
-            screen_refresh = 1;
-        }
-        else if (scroll<0){
-            scroll-=MIN(SCROLL_SPEED_PX, MENU_ZONE_HEIGHT+scroll);
             screen_refresh = 1;
         }
 
@@ -934,5 +976,10 @@ void run_menu_loop()
         if(stop_menu_loop){
           pumpWrap_disabled = 0;
         }
+    }
+
+    /// ------ Reset prev key repeat params -------
+    if(SDL_EnableKeyRepeat(backup_key_repeat_delay, backup_key_repeat_interval)){
+         MENU_ERROR_PRINTF("ERROR with SDL_EnableKeyRepeat: %s\n", SDL_GetError());
     }
 }
