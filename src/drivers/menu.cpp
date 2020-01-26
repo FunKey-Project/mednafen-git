@@ -873,6 +873,13 @@ void run_menu_loop()
 				MDFNI_SaveState(NULL, NULL, NULL, NULL, NULL);
 
                                 /// ----- Hud Msg -----
+                                sprintf(shell_cmd, "%s %d \"        SAVED IN SLOT %d\"",
+                                    SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, CurrentState+1);
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+
                                 stop_menu_loop = 1;
                             }
                             else{
@@ -892,6 +899,13 @@ void run_menu_loop()
                                 MDFNI_LoadState(NULL, NULL);
 
                                 /// ----- Hud Msg -----
+                                sprintf(shell_cmd, "%s %d \"      LOADED FROM SLOT %d\"",
+                                    SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, CurrentState+1);
+                                fp = popen(shell_cmd, "r");
+                                if (fp == NULL) {
+                                    MENU_ERROR_PRINTF("Failed to run command %s\n", shell_cmd);
+                                }
+
                                 stop_menu_loop = 1;
                             }
                             else{
