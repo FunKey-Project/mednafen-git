@@ -69,6 +69,16 @@ bool pending_save_state, pending_snapshot, pending_ssnapshot, pending_save_movie
 static uint32 volatile MainThreadID = 0;
 static bool ffnosound;
 
+static char *prog_name;
+static char *load_state_file = NULL;
+static int load_state_slot = -1;
+static char *quick_save_file_extension = "quicksave";
+char *mRomName = NULL;
+char *mRomPath = NULL;
+char *quick_save_file = NULL;
+int mQuickSaveAndPoweroff=0;
+bool found_quick_save_file = false;
+
 static const MDFNSetting_EnumList SDriver_List[] =
 {
  { "default", -1, "Default", gettext_noop("Selects the default sound driver.") },
@@ -165,6 +175,8 @@ static const MDFNSetting DriverSettings[] =
 
   { "srwautoenable", MDFNSF_SUPPRESS_DOC, gettext_noop("DO NOT USE UNLESS YOU'RE A SPACE GOAT"/*"Automatically enable state rewinding functionality on game load."*/), gettext_noop("Use this setting with caution, as save state rewinding can have widely variable memory and CPU usage requirements among different games and different emulated systems."), MDFNST_BOOL, "0" },
 };
+
+static bool HandleVideoChange(void);
 
 void BuildSystemSetting(MDFNSetting *setting, const char *system_name, const char *name, const char *description, const char *description_extra, MDFNSettingType type,
 	const char *default_value, const char *minimum, const char *maximum,
@@ -367,16 +379,26 @@ static SignalInfo SignalDefs[] =
  { SIGABRT, "SIGABRT", gettext_noop("Abort, Retry, Ignore, Fail?\n"), NULL, FALSE },
  #endif
 
- #ifdef SIGUSR1
- { SIGUSR1, "SIGUSR1", gettext_noop("Killing your processes is not nice.\n"), NULL, TRUE },
- #endif
-
  #ifdef SIGUSR2
  { SIGUSR2, "SIGUSR2", gettext_noop("Killing your processes is not nice.\n"), NULL, TRUE },
  #endif
 };
 
 static volatile int SignalSTDOUT;
+
+
+
+/* Handler for SIGUSR1, caused by closing the console */
+void handle_sigusr1(int sig)
+{
+    //printf("Caught signal USR1 %d\n", sig);
+
+    /* Exit menu if it was launched */
+    stop_menu_loop = 1;
+
+    /* Signal to quick save and poweoff after next loop */
+    mQuickSaveAndPoweroff = 1;
+}
 
 static void SetSignals(void (*t)(int))
 {
@@ -406,6 +428,9 @@ static void SetSignals(void (*t)(int))
 
   #endif
  }
+
+  /* Init USR1 Signal for quick save and poweroff */
+  signal(SIGUSR1, handle_sigusr1);
 }
 
 static void SignalPutString(const char *string)
@@ -699,6 +724,8 @@ static int DoArgs(int argc, char *argv[], char **filename)
 
 	 { "cdtest", NULL, 0, &cdtestpath, SUBSTYPE_STRING_ALLOC },
 
+   { "loadStateFile", NULL, 0, &load_state_file, SUBSTYPE_STRING_ALLOC },
+
 	 { "mtetest", NULL, &mtetest, 0, 0 },
 
 	 { "stateslstest", NULL, &StateSLSTest, 0, 0 },
@@ -769,6 +796,35 @@ static int DoArgs(int argc, char *argv[], char **filename)
 	  MDFN_PrintError(_("No game filename specified!"));
 	  return(0);
 	 }
+   else {
+      mRomName = strdup(*filename);
+      //printf("****** mRomName = %s\n", mRomName);
+      FILE *f = fopen(mRomName, "rb");
+      if (f) {
+        /* Save Rom path */
+        mRomPath = (char *)malloc(strlen(mRomName)+1);
+        strcpy(mRomPath, mRomName);
+        char *slash = strrchr ((char*)mRomPath, '/');
+        *slash = 0;
+
+        /* Rom name without extension */
+        char *point = strrchr ((char*)slash+1, '.');
+        *point = 0;
+
+        /* Set quicksave filename */
+        quick_save_file = (char *)malloc(strlen(mRomPath) + strlen(slash+1) +
+          strlen(quick_save_file_extension) + 2 + 1);
+        sprintf(quick_save_file, "%s/%s.%s",
+          mRomPath, slash+1, quick_save_file_extension);
+        printf("quick_save_file: %s\n", quick_save_file);
+
+        fclose(f);
+      }
+      else{
+        MDFN_PrintError("Rom %s not found \n", mRomName);
+        return(0);
+      }
+    }
 	}
 	return(1);
 }
@@ -1708,9 +1764,51 @@ static bool HandleVideoChange(void)
 }
 
 
+
+/* Quick save and turn off the console */
+void quick_save_and_poweroff()
+{
+    /* Vars */
+    char shell_cmd[1024];
+    FILE *fp;
+
+    /* Send command to kill any previously scheduled shutdown */
+    sprintf(shell_cmd, "pkill %s", SHELL_CMD_SCHEDULE_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Quick Save  */
+    MDFNI_SaveState(quick_save_file, NULL, NULL, NULL, NULL);
+
+    /* Write quick load file */
+    sprintf(shell_cmd, "%s SDL_NOMOUSE=1 \"%s\" -loadStateFile \"%s\" \"%s\"",
+      SHELL_CMD_WRITE_QUICK_LOAD_CMD, prog_name, quick_save_file, mRomName);
+    printf("Cmd write quick load file:\n  %s\n", shell_cmd);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Clean Poweroff */
+    sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Exit Emulator */
+   NeedExitNow = 1;
+}
+
+
 int main(int argc, char *argv[])
 {
 	//ThreadTest();
+
+  /* Save program name */
+  prog_name = argv[0];
 
 #if 0
 	// Special helper mode. (TODO)
@@ -1755,9 +1853,10 @@ int main(int argc, char *argv[])
 #endif
 	char *needie = NULL;
 
-        // Place before calls to SDL_Init()
+  // Place before calls to SDL_Init()
 	putenv(strdup("SDL_DISABLE_LOCK_KEYS=1"));
-        //
+  putenv(strdup("SDL_NOMOUSE=1"));
+  //
 
 	MDFNDHaveFocus = false;
 
@@ -1870,8 +1969,6 @@ int main(int argc, char *argv[])
 	*/
 	int ret = 0;
 
-	//Video_Init(NULL);
-
 	VTMutex = MDFND_CreateMutex();
         EVMutex = MDFND_CreateMutex();
 
@@ -1891,6 +1988,7 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 
 	NeedExitNow = 0;
 
+
 	#if 0
 	{
 	 long start_ticks = Time::MonoMS();
@@ -1902,8 +2000,8 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 	}
 	#endif
 
-        if(LoadGame(force_module_arg, needie))
-        {
+  if(LoadGame(force_module_arg, needie))
+  {
 	 uint32 pitch32 = CurGame->fb_width;
 	 //uint32 pitch32 = round_up_pow2(CurGame->fb_width);
 	 MDFN_PixelFormat nf(MDFN_COLORSPACE_RGB, 0, 8, 16, 24);
@@ -1925,7 +2023,7 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 
          NeedVideoChange = -1;
          FPS_Init();
-        }
+  }
 	else
 	{
 	 ret = -1;
@@ -1953,8 +2051,40 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 
 	   init_menu_SDL();
 
-	   DidVideoChange = true;
-	   NeedVideoChange = 0;
+	    DidVideoChange = true;
+	    NeedVideoChange = 0;
+
+	    /* Load file */
+	    if(load_state_file != NULL)
+	    {
+	      printf("LOADING FROM FILE %s...\n", load_state_file);
+	      MDFNI_LoadState(load_state_file, NULL);
+	      printf("LOADED FROM SLOT %s\n", load_state_file);
+	      load_state_file = NULL;
+	    }
+	    /* Load quick save file */
+	    else if(access( quick_save_file, F_OK ) != -1)
+	    {
+	      printf("Found quick save file: %s\n", quick_save_file);
+	      int resume = launch_resume_menu_loop();
+	      if(resume == RESUME_YES)
+	      {
+		printf("Resume game from quick save file: %s\n", quick_save_file);
+		MDFNI_LoadState(quick_save_file, NULL);
+	      }
+	      else{
+		printf("Reset game\n");
+	      }
+
+	      /* Remove quicksave file if present */
+	      if (remove(quick_save_file) == 0)
+	      {
+		printf("Deleted successfully: %s\n", quick_save_file);
+	      }
+	      else{
+		printf("Unable to delete the file: %s\n", quick_save_file);
+	      }
+	    }
 	 }
 
 	 {
@@ -1976,6 +2106,12 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
            VTReady.store(-1, std::memory_order_release);	// Set to -1 after we're done blitting everything(including on-screen display stuff), and NOT just the emulated system's video surface.
           }
 	 }
+
+    /* Quick save and poweroff */
+    if(mQuickSaveAndPoweroff){
+      quick_save_and_poweroff();
+      mQuickSaveAndPoweroff = 0;
+    }
 
 	 PumpWrap();
 	 if(DidVideoChange)	// Do it after PumpWrap() in case there are stale SDL_ActiveEvent in the SDL event queue.

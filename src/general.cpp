@@ -36,6 +36,7 @@ static string FileBase;
 static string FileExt;	/* Includes the . character, as in ".nes" */
 static string FileBaseDirectory;
 
+
 void MDFN_SetBaseDirectory(const std::string& dir)
 {
  BaseDirectory = string(dir);
@@ -391,7 +392,8 @@ std::string MDFN_MakeFName(MakeFName_Type type, int id1, const char *cd1)
                       }
                       else if(type == MDFNMKF_STATE)
                       {
-		       dir = MDFN_GetSettingS("filesys.path_state");
+           //dir = MDFN_GetSettingS("filesys.path_state");
+           dir = FileBaseDirectory;
                        fstring = MDFN_GetSettingS("filesys.fname_state");
 		       fmap['x'] = (cd1 ? cd1 : "mcs");
                       }

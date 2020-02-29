@@ -12,7 +12,7 @@ enum
 };
 
 typedef struct {
-        const char *name;
+    const char *name;
 	const char *description;
 	int *var;
 
