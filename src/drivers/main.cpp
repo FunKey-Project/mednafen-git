@@ -1254,6 +1254,45 @@ static volatile SDL_Event gtevents[gtevents_size];
 static volatile int gte_read = 0;
 static volatile int gte_write = 0;
 
+
+
+/* Quick save and turn off the console */
+void quick_save_and_poweroff()
+{
+    /* Vars */
+    char shell_cmd[1024];
+    FILE *fp;
+
+    /* Send command to kill any previously scheduled shutdown */
+    sprintf(shell_cmd, "pkill %s", SHELL_CMD_SCHEDULE_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Quick Save  */
+    MDFNI_SaveState(quick_save_file, NULL, NULL, NULL, NULL);
+
+    /* Write quick load file */
+    sprintf(shell_cmd, "%s SDL_NOMOUSE=1 \"%s\" -fs 1 -loadStateFile \"%s\" \"%s\"",
+      SHELL_CMD_WRITE_QUICK_LOAD_CMD, prog_name, quick_save_file, mRomName);
+    printf("Cmd write quick load file:\n  %s\n", shell_cmd);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Clean Poweroff */
+    sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
+    fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+
+    /* Exit Emulator */
+   NeedExitNow = 1;
+}
+
 /* This function may also be called by the main thread if a game is not loaded. */
 /*
  This function may be called from MDFND_MidSync(), so make sure that it doesn't call directly nor indirectly
@@ -1273,6 +1312,12 @@ static void GameThread_HandleEvents(void)
   gte_read = (gte_read + 1) & (gtevents_size - 1);
  }
  MDFND_UnlockMutex(EVMutex);
+
+  /* Quick save and poweroff */
+  if(mQuickSaveAndPoweroff){
+    quick_save_and_poweroff();
+    mQuickSaveAndPoweroff = 0;
+  }
 
  for(unsigned int i = 0; i < numevents; i++)
  {
@@ -1764,45 +1809,6 @@ static bool HandleVideoChange(void)
 }
 
 
-
-/* Quick save and turn off the console */
-void quick_save_and_poweroff()
-{
-    /* Vars */
-    char shell_cmd[1024];
-    FILE *fp;
-
-    /* Send command to kill any previously scheduled shutdown */
-    sprintf(shell_cmd, "pkill %s", SHELL_CMD_SCHEDULE_POWERDOWN);
-    fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    }
-
-    /* Quick Save  */
-    MDFNI_SaveState(quick_save_file, NULL, NULL, NULL, NULL);
-
-    /* Write quick load file */
-    sprintf(shell_cmd, "%s SDL_NOMOUSE=1 \"%s\" -loadStateFile \"%s\" \"%s\"",
-      SHELL_CMD_WRITE_QUICK_LOAD_CMD, prog_name, quick_save_file, mRomName);
-    printf("Cmd write quick load file:\n  %s\n", shell_cmd);
-    fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    }
-
-    /* Clean Poweroff */
-    sprintf(shell_cmd, "%s", SHELL_CMD_POWERDOWN);
-    fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    }
-
-    /* Exit Emulator */
-   NeedExitNow = 1;
-}
-
-
 int main(int argc, char *argv[])
 {
 	//ThreadTest();
@@ -2054,12 +2060,18 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 	    DidVideoChange = true;
 	    NeedVideoChange = 0;
 
+	    /* Timer here to let other modules the time to finish initializing
+	     * Otherwise sound throws an error when trying to load games.
+	     * Should be inverstigated and corrected properly, not like this.
+	     */
+	    usleep(500*1000);
+
 	    /* Load file */
 	    if(load_state_file != NULL)
 	    {
 	      printf("LOADING FROM FILE %s...\n", load_state_file);
 	      MDFNI_LoadState(load_state_file, NULL);
-	      printf("LOADED FROM SLOT %s\n", load_state_file);
+	      printf("LOADED FROM FILE %s\n", load_state_file);
 	      load_state_file = NULL;
 	    }
 	    /* Load quick save file */
@@ -2072,7 +2084,8 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
 		printf("Resume game from quick save file: %s\n", quick_save_file);
 		MDFNI_LoadState(quick_save_file, NULL);
 	      }
-	      else{
+	      else
+	      {
 		printf("Reset game\n");
 
 		/* Remove quicksave file if present */
@@ -2108,13 +2121,8 @@ for(int zgi = 1; zgi < argc; zgi++)// start game load test loop
           }
 	 }
 
-    /* Quick save and poweroff */
-    if(mQuickSaveAndPoweroff){
-      quick_save_and_poweroff();
-      mQuickSaveAndPoweroff = 0;
-    }
+    PumpWrap();
 
-	 PumpWrap();
 	 if(DidVideoChange)	// Do it after PumpWrap() in case there are stale SDL_ActiveEvent in the SDL event queue.
 	  SendCEvent_to_GT(CEVT_SET_INPUT_FOCUS, (char*)0 + (bool)(SDL_GetAppState() & SDL_APPINPUTFOCUS), NULL);
 
