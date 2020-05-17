@@ -124,7 +124,7 @@ libmdfnsdl_a_LIBADD =
 am__libmdfnsdl_a_SOURCES_DIST = main.cpp input.cpp args.cpp help.cpp \
 	ers.cpp sound.cpp netplay.cpp input-config.cpp console.cpp \
 	cheat.cpp fps.cpp video-state.cpp remote.cpp rmdui.cpp \
-	opengl.cpp shader.cpp overlay.cpp menu.cpp video.cpp nongl.cpp \
+	overlay.cpp menu.cpp video.cpp nongl.cpp \
 	nnx.cpp thread_win32.cpp thread_sdl.cpp hqxx-common.cpp \
 	hq2x.cpp hq3x.cpp hq4x.cpp scale2x.c scale3x.c scalebit.c \
 	2xSaI.cpp Joystick.cpp Joystick_SDL.cpp Joystick_Linux.cpp \
@@ -148,8 +148,8 @@ am_libmdfnsdl_a_OBJECTS = main.$(OBJEXT) input.$(OBJEXT) \
 	args.$(OBJEXT) help.$(OBJEXT) ers.$(OBJEXT) sound.$(OBJEXT) \
 	netplay.$(OBJEXT) input-config.$(OBJEXT) console.$(OBJEXT) \
 	cheat.$(OBJEXT) fps.$(OBJEXT) video-state.$(OBJEXT) \
-	remote.$(OBJEXT) rmdui.$(OBJEXT) opengl.$(OBJEXT) \
-	shader.$(OBJEXT) overlay.$(OBJEXT) menu.$(OBJEXT) \
+	remote.$(OBJEXT) rmdui.$(OBJEXT) \
+	overlay.$(OBJEXT) menu.$(OBJEXT) \
 	video.$(OBJEXT) nongl.$(OBJEXT) nnx.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) Joystick.$(OBJEXT) \
 	Joystick_SDL.$(OBJEXT) $(am__objects_4) $(am__objects_5) \
@@ -405,8 +405,8 @@ DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_bui
 noinst_LIBRARIES = libmdfnsdl.a
 libmdfnsdl_a_SOURCES = main.cpp input.cpp args.cpp help.cpp ers.cpp \
 	sound.cpp netplay.cpp input-config.cpp console.cpp cheat.cpp \
-	fps.cpp video-state.cpp remote.cpp rmdui.cpp opengl.cpp \
-	shader.cpp overlay.cpp menu.cpp video.cpp nongl.cpp nnx.cpp \
+	fps.cpp video-state.cpp remote.cpp rmdui.cpp \
+	overlay.cpp menu.cpp video.cpp nongl.cpp nnx.cpp \
 	$(am__append_1) $(am__append_2) $(am__append_3) Joystick.cpp \
 	Joystick_SDL.cpp $(am__append_4) $(am__append_5) \
 	$(am__append_6)
@@ -486,7 +486,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netplay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nnx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nongl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opengl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/overlay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prompt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/remote.Po@am__quote@
@@ -494,7 +493,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scale2x.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scale3x.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scalebit.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sound.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_sdl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_win32.Po@am__quote@

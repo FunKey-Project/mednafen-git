@@ -59,8 +59,6 @@ src/drivers/nnx.cpp
 src/drivers/help.cpp
 src/drivers/debugger.cpp
 src/drivers/video-state.cpp
-src/drivers/opengl.cpp
-src/drivers/shader.cpp
 src/drivers/hq2x.cpp
 src/drivers/netplay.cpp
 src/drivers/scalebit.c

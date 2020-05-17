@@ -25,8 +25,6 @@
 #include <trio/trio.h>
 
 #include "video.h"
-#include "opengl.h"
-#include "shader.h"
 #include "nongl.h"
 #include "overlay.h"
 
@@ -153,7 +151,7 @@ static const MDFNSetting_EnumList VDriver_List[] =
 
 static const MDFNSetting GlobalVideoSettings[] =
 {
- { "video.driver", MDFNSF_NOFLAGS, gettext_noop("Video output method/driver."), NULL, MDFNST_ENUM, "opengl", NULL, NULL, NULL, NULL, VDriver_List },
+ { "video.driver", MDFNSF_NOFLAGS, gettext_noop("Video output method/driver."), NULL, MDFNST_ENUM, "sdl", NULL, NULL, NULL, NULL, VDriver_List },
 
  { "video.fs", MDFNSF_NOFLAGS, gettext_noop("Enable fullscreen mode."), NULL, MDFNST_BOOL, "0", },
  { "video.glvsync", MDFNSF_NOFLAGS, gettext_noop("Attempt to synchronize OpenGL page flips to vertical retrace period."),
@@ -222,37 +220,6 @@ static const MDFNSetting_EnumList Special_List[] =
     { NULL, 0 },
 };
 
-static const MDFNSetting_EnumList Shader_List[] =
-{
-    { "none",		SHADER_NONE,		gettext_noop("None/Disabled") },
-    { "autoip", 	SHADER_AUTOIP,		gettext_noop("Auto Interpolation"), gettext_noop("Will automatically interpolate on each axis if the corresponding effective scaling factor is not an integer.") },
-    { "autoipsharper",	SHADER_AUTOIPSHARPER,	gettext_noop("Sharper Auto Interpolation"), gettext_noop("Same as \"autoip\", but when interpolation is done, it is done in a manner that will reduce blurriness if possible.") },
-    { "scale2x", 	SHADER_SCALE2X,    	"Scale2x" },
-    { "sabr",		SHADER_SABR,		"SABR v3.0", gettext_noop("GPU-intensive.") },
-    { "ipsharper", 	SHADER_IPSHARPER,  	gettext_noop("Sharper bilinear interpolation.") },
-    { "ipxnoty", 	SHADER_IPXNOTY,    	gettext_noop("Linear interpolation on X axis only.") },
-    { "ipynotx", 	SHADER_IPYNOTX,    	gettext_noop("Linear interpolation on Y axis only.") },
-    { "ipxnotysharper", SHADER_IPXNOTYSHARPER, 	gettext_noop("Sharper version of \"ipxnoty\".") },
-    { "ipynotxsharper", SHADER_IPYNOTXSHARPER, 	gettext_noop("Sharper version of \"ipynotx\".") },
-
-    { "goat", 		SHADER_GOAT, 		gettext_noop("Simple approximation of a color TV CRT look."), gettext_noop("Intended for fullscreen modes with a vertical resolution of around 1000 to 1500 pixels.  Doesn't simulate halation and electron beam energy distribution nuances.") },
-
-    { NULL, 0 },
-};
-
-static const MDFNSetting_EnumList GoatPat_List[] =
-{
-	{ "goatron",	ShaderParams::GOAT_MASKPAT_GOATRON,	gettext_noop("Goatron"), gettext_noop("Brightest.") },
-	{ "goattron",	ShaderParams::GOAT_MASKPAT_GOATRON },
-	{ "goatronprime",	ShaderParams::GOAT_MASKPAT_GOATRONPRIME },
-	{ "goattronprime",	ShaderParams::GOAT_MASKPAT_GOATRONPRIME },
-
-	{ "borg",	ShaderParams::GOAT_MASKPAT_BORG,	gettext_noop("Borg"), gettext_noop("Darkest.") },
-	{ "slenderman",	ShaderParams::GOAT_MASKPAT_SLENDERMAN,	gettext_noop("Slenderman"), gettext_noop("Spookiest?") },
-
-	{ NULL, 0 },
-};
-
 void Video_MakeSettings(std::vector <MDFNSetting> &settings)
 {
  static const char *CSD_xres = gettext_noop("Full-screen horizontal resolution.");
@@ -275,9 +242,6 @@ void Video_MakeSettings(std::vector <MDFNSetting> &settings)
 
  static const char *CSD_special = gettext_noop("Enable specified special video scaler.");
  static const char *CSDE_special = gettext_noop("The destination rectangle is NOT altered by this setting, so if you have xscale and yscale set to \"2\", and try to use a 3x scaling filter like hq3x, the image is not going to look that great. The nearest-neighbor scalers are intended for use with bilinear interpolation enabled, at high resolutions(such as 1280x1024; nn2x(or nny2x) + bilinear interpolation + fullscreen stretching at this resolution looks quite nice).");
-
- static const char *CSD_shader = gettext_noop("Enable specified OpenGL shader.");
- static const char *CSDE_shader = gettext_noop("Obviously, this will only work with the OpenGL \"video.driver\" setting, and only on cards and OpenGL implementations that support shaders, otherwise you will get a black screen, or Mednafen may display an error message when starting up. When a shader is enabled, the \"<system>.videoip\" setting is ignored.");
 
  for(unsigned int i = 0; i < MDFNSystems.size() + 1; i++)
  {
@@ -345,27 +309,6 @@ void Video_MakeSettings(std::vector <MDFNSetting> &settings)
 
   BuildSystemSetting(&setting, sysname, "special", CSD_special, CSDE_special, MDFNST_ENUM, "none", NULL, NULL, NULL, NULL, Special_List);
   settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader", CSD_shader, CSDE_shader, MDFNST_ENUM, "none", NULL, NULL, NULL, NULL, Shader_List);
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.hdiv", gettext_noop("Constant RGB horizontal divergence."), nullptr, MDFNST_FLOAT, "0.50", "-2.00", "2.00");
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.vdiv", gettext_noop("Constant RGB vertical divergence."), nullptr, MDFNST_FLOAT, "0.50", "-2.00", "2.00");
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.pat", gettext_noop("Mask pattern."), nullptr, MDFNST_ENUM, "goatron", NULL, NULL, NULL, NULL, GoatPat_List);
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.tp", gettext_noop("Transparency of otherwise-opaque mask areas."), nullptr, MDFNST_FLOAT, "0.50", "0.00", "1.00");
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.fprog", gettext_noop("Force interlaced video to be treated as progressive."), gettext_noop("When disabled, the default, the \"video.deinterlacer\" setting is effectively ignored with respect to what appears on the screen.  When enabled, it may be prudent to disable the scanlines effect controlled by the *.goat.slen setting, or else the scanline effect may look objectionable."), MDFNST_BOOL, "0");
-  settings.push_back(setting);
-
-  BuildSystemSetting(&setting, sysname, "shader.goat.slen", gettext_noop("Enable scanlines effect."), nullptr, MDFNST_BOOL, "1");
-  settings.push_back(setting);
  }
 
  for(unsigned i = 0; i < sizeof(GlobalVideoSettings) / sizeof(GlobalVideoSettings[0]); i++)
@@ -383,15 +326,13 @@ typedef struct
         int stretch;
         int special;
         int scanlines;
-	ShaderType shader;
-	ShaderParams shader_params;
 } CommonVS;
 
 static CommonVS _video;
 static int _fullscreen;
 
 static bool osd_alpha_blend;
-static unsigned int vdriver = VDRIVER_OPENGL;
+static unsigned int vdriver = VDRIVER_SOFTSDL;
 
 static struct ScalerDefinition
 {
@@ -423,8 +364,6 @@ static struct ScalerDefinition
 
 static MDFNGI *VideoGI;
 
-static bool sdlhaveogl = false;
-
 static int best_xres = 0, best_yres = 0;
 
 static int cur_xres, cur_yres, cur_flags;
@@ -433,7 +372,6 @@ static ScalerDefinition *CurrentScaler = NULL;
 
 SDL_Surface *screen = NULL;
 SDL_Surface *hw_screen = NULL;
-static OpenGL_Blitter *ogl_blitter = NULL;
 static SDL_Surface *IconSurface=NULL;
 
 static MDFN_Rect screen_dest_rect;
@@ -463,12 +401,6 @@ static void MarkNeedBBClear(void)
 static void ClearBackBuffer(void)
 {
  //printf("WOO: %u\n", Time::MonoMS());
- if(ogl_blitter)
- {
-  ogl_blitter->ClearBackBuffer();
- }
- else
- {
   // Don't use SDL_FillRect() on hardware surfaces, it's borked(causes a long wait) with DirectX.
   // ...on second thought, memset() is likely borked on PPC with hardware surface memory due to use of "dcbz" on uncachable memory. :(
   //
@@ -487,7 +419,6 @@ static void ClearBackBuffer(void)
   {
    SDL_FillRect(screen, NULL, 0);
   }
- }
 }
 
 void Video_Kill(void)
@@ -510,12 +441,6 @@ void Video_Kill(void)
  {
   delete HelpSurface;
   HelpSurface = NULL;
- }
-
- if(ogl_blitter)
- {
-  delete ogl_blitter;
-  ogl_blitter = NULL;
  }
 
  if(vdriver == VDRIVER_OVERLAY)
@@ -785,7 +710,6 @@ void Video_Init(MDFNGI *gi)
 
  const std::string special_string = MDFN_GetSettingS(snp + std::string("special"));
  const unsigned special_id = MDFN_GetSettingUI(snp + std::string("special"));
- const std::string goat_pat_string = MDFN_GetSettingS(snp + "shader.goat.pat");
 
  _fullscreen = MDFN_GetSettingB("video.fs");
  _video.xres = MDFN_GetSettingUI(snp + "xres");
@@ -799,14 +723,6 @@ void Video_Init(MDFNGI *gi)
  _video.scanlines = MDFN_GetSettingI(snp + "scanlines");
 
  _video.special = special_id;
-
- _video.shader = (ShaderType)MDFN_GetSettingI(snp + "shader");
- _video.shader_params.goat_hdiv = MDFN_GetSettingF(snp + "shader.goat.hdiv");
- _video.shader_params.goat_vdiv = MDFN_GetSettingF(snp + "shader.goat.vdiv");
- _video.shader_params.goat_pat = MDFN_GetSettingI(snp + "shader.goat.pat");
- _video.shader_params.goat_tp = MDFN_GetSettingF(snp + "shader.goat.tp");
- _video.shader_params.goat_slen = MDFN_GetSettingB(snp + "shader.goat.slen");
- _video.shader_params.goat_fprog = MDFN_GetSettingB(snp + "shader.goat.fprog");
 
  CurrentScaler = nullptr;
  for(auto& scaler : Scalers)
@@ -840,42 +756,7 @@ flags |= SDL_NOFRAME;
 
  vdriver = MDFN_GetSettingI("video.driver");
 
- if(vdriver == VDRIVER_OPENGL)
- {
-  if(!sdlhaveogl)
-  {
-   // SDL_GL_LoadLibrary returns 0 on success, -1 on failure
-   if(SDL_GL_LoadLibrary(NULL) == 0)
-    sdlhaveogl = true;
-   else
-    sdlhaveogl = false;
-  }
-
-  if(!sdlhaveogl)
-  {
-   MDFN_PrintError(_("Could not load OpenGL library, disabling OpenGL usage!"));
-   vdriver = VDRIVER_SOFTSDL;
-  }
- }
-
- if(vdriver == VDRIVER_OPENGL)
- {
-  flags |= SDL_OPENGL;
-
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1 );
-
-  #if SDL_VERSION_ATLEAST(1, 2, 10)
-  SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, MDFN_GetSettingB("video.glvsync"));
-  #endif
- }
- else if(vdriver == VDRIVER_SOFTSDL)
- {
-
- }
- else if(vdriver == VDRIVER_OVERLAY)
- {
-
- }
+ vdriver = VDRIVER_SOFTSDL;
 
  exs = _fullscreen ? _video.xscalefs : _video.xscale;
  eys = _fullscreen ? _video.yscalefs : _video.yscale;
@@ -950,18 +831,6 @@ flags |= SDL_NOFRAME;
 
  //MDFN_printf(_("OpenGL: %s\n"), (cur_flags & SDL_OPENGL) ? _("Yes") : _("No"));
 
- if(cur_flags & SDL_OPENGL)
- {
-  MDFN_AutoIndent aindps;
-  char sp[128] = { 0 };
-
-  if(_video.shader == SHADER_GOAT)
-   trio_snprintf(sp, sizeof(sp), " (pat=%s, hdiv=%f, vdiv=%f, tp=%f, slen=%d, fprog=%d)",
-	goat_pat_string.c_str(), _video.shader_params.goat_hdiv, _video.shader_params.goat_vdiv, _video.shader_params.goat_tp, _video.shader_params.goat_slen, _video.shader_params.goat_fprog);
-
-  MDFN_printf(_("Shader: %s%s\n"), MDFN_GetSettingS(snp + "shader").c_str(), sp);
- }
-
  MDFN_printf(_("Fullscreen: %s\n"), _fullscreen ? _("Yes") : _("No"));
  MDFN_printf(_("Special Scaler: %s\n"), (special_id == NTVB_NONE) ? _("None") : special_string.c_str());
 
@@ -990,28 +859,13 @@ flags |= SDL_NOFRAME;
 
  int rs, gs, bs, as;
 
- if(cur_flags & SDL_OPENGL)
- {
-  try
-  {
-   ogl_blitter = new OpenGL_Blitter(_video.scanlines, _video.shader, _video.shader_params, screen->w, screen->h, &rs, &gs, &bs, &as);
-  }
-  catch(std::exception &e)
-  {
-   Video_Kill();
-   throw;
-  }
- }
- else
- {
-  rs = screen->format->Rshift;
-  gs = screen->format->Gshift;
-  bs = screen->format->Bshift;
+ rs = screen->format->Rshift;
+ gs = screen->format->Gshift;
+ bs = screen->format->Bshift;
 
-  as = 0;
-  while(as == rs || as == gs || as == bs) // Find unused 8-bits to use as our alpha channel
+ as = 0;
+ while(as == rs || as == gs || as == bs) // Find unused 8-bits to use as our alpha channel
    as += 8;
- }
 
  //printf("%d %d %d %d\n", rs, gs, bs, as);
 
@@ -1092,12 +946,6 @@ flags |= SDL_NOFRAME;
  {
   ClearBackBuffer();
 
-  if(cur_flags & SDL_OPENGL)
-  {
-   SDL_GL_SwapBuffers();
-   //ogl_blitter->HardSync();
-  }
-  else
    SDL_Flip(screen);
  }
 
@@ -1125,15 +973,10 @@ void VideoShowMessage(char *text)
 
 void BlitRaw(MDFN_Surface *src, const MDFN_Rect *src_rect, const MDFN_Rect *dest_rect, int source_alpha)
 {
- if(ogl_blitter)
-  ogl_blitter->BlitRaw(src, src_rect, dest_rect, (source_alpha != 0) && osd_alpha_blend);
- else
- {
   SDL_to_MDFN_Surface_Wrapper m_surface(screen);
 
   //MDFN_SrcAlphaBlitSurface(src, src_rect, &m_surface, dest_rect);
   MDFN_StretchBlitSurface(src, *src_rect, &m_surface, *dest_rect, (source_alpha > 0) && osd_alpha_blend);
- }
 
  bool cond1 = (dest_rect->x < screen_dest_rect.x || (dest_rect->x + dest_rect->w) > (screen_dest_rect.x + screen_dest_rect.w));
  bool cond2 = (dest_rect->y < screen_dest_rect.y || (dest_rect->y + dest_rect->h) > (screen_dest_rect.y + screen_dest_rect.h));
@@ -1304,10 +1147,6 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
     }
 #endif
 
-    if(ogl_blitter)
-     ogl_blitter->Blit(&bah_surface, &boohoo_rect, &dest_rect, &eff_src_rect, InterlaceField, evideoip, CurGame->rotated);
-    else
-    {
      if(OverlayOK)
      {
       SDL_Rect tr;
@@ -1325,14 +1164,9 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
 
       MDFN_StretchBlitSurface(&bah_surface, boohoo_rect, &m_surface, dest_rect, false, _video.scanlines, &eff_src_rect, CurGame->rotated, InterlaceField);
      }
-    }
    }
    else // No special scaler:
    {
-    if(ogl_blitter)
-     ogl_blitter->Blit(eff_source_surface, &eff_src_rect, &dest_rect, &eff_src_rect, InterlaceField, evideoip, CurGame->rotated);
-    else
-    {
      if(OverlayOK)
      {
       SDL_Rect tr;
@@ -1350,7 +1184,6 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
 
       MDFN_StretchBlitSurface(eff_source_surface, eff_src_rect, &m_surface, dest_rect, false, _video.scanlines, &eff_src_rect, CurGame->rotated, InterlaceField);
      }
-    }
    }
 }
 
@@ -1640,10 +1473,6 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
 
    ib.reset(new MDFN_Surface(NULL, sr.w, sr.h, sr.w, MDFN_PixelFormat(MDFN_COLORSPACE_RGB, real_rs, real_gs, real_bs, real_as)));
 
-   if(ogl_blitter)
-    ogl_blitter->ReadPixels(ib.get(), &sr);
-   else
-   {
     if(SDL_MUSTLOCK(screen))
      SDL_LockSurface(screen);
 
@@ -1657,7 +1486,6 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
 
     if(SDL_MUSTLOCK(screen))
      SDL_UnlockSurface(screen);
-   }
 
 
    tr.x = tr.y = 0;
@@ -1757,26 +1585,16 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
   // but that gets awfully complicated and prone to bugs when dealing with double/triple-buffered video...).
   //
   // std::max so we don't position it offscreen if the user has selected xscalefs or yscalefs values that are too large.
-  if(!(cur_flags & SDL_OPENGL))
-  {
-   fps_offsx = std::max<int32>(screen_dest_rect.x, 0);
-   fps_offsy = std::max<int32>(screen_dest_rect.y, 0);
-  }
+  fps_offsx = std::max<int32>(screen_dest_rect.x, 0);
+  fps_offsy = std::max<int32>(screen_dest_rect.y, 0);
   FPS_DrawToScreen(screen, real_rs, real_gs, real_bs, real_as, fps_offsx, fps_offsy);
  }
 
- if(!(cur_flags & SDL_OPENGL))
+ if(!OverlayOK)
  {
-  if(!OverlayOK)
-    //SDL_Rotate_270(screen, hw_screen);
-    SDL_BlitSurface(screen, NULL, hw_screen, NULL);
-    SDL_Flip(hw_screen);
- }
- else
- {
-  PumpWrap();
-  SDL_GL_SwapBuffers();
-  //ogl_blitter->HardSync();
+   //SDL_Rotate_270(screen, hw_screen);
+   SDL_BlitSurface(screen, NULL, hw_screen, NULL);
+   SDL_Flip(hw_screen);
  }
 }
 

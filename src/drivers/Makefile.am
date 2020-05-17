@@ -7,7 +7,6 @@ noinst_LIBRARIES	=	libmdfnsdl.a
 libmdfnsdl_a_SOURCES = main.cpp input.cpp args.cpp help.cpp ers.cpp sound.cpp netplay.cpp input-config.cpp
 libmdfnsdl_a_SOURCES += console.cpp cheat.cpp fps.cpp video-state.cpp remote.cpp rmdui.cpp
 
-libmdfnsdl_a_SOURCES += opengl.cpp shader.cpp
 libmdfnsdl_a_SOURCES += overlay.cpp
 
 libmdfnsdl_a_SOURCES += menu.cpp
