@@ -124,7 +124,6 @@
 
 /// -------------- STATIC VARIABLES --------------
 extern SDL_Surface *screen;
-SDL_Surface *virtual_hw_screen;  // this one is not rotated
 extern SDL_Surface *hw_screen;
 SDL_Surface * draw_screen;
 extern int volatile pumpWrap_disabled;
@@ -160,6 +159,14 @@ int brightness_percentage = 0;
 
 #undef X
 #define X(a, b) b,
+const char *aspect_ratio_name[] = {ASPECT_RATIOS};
+int aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
+int aspect_ratio_factor_percent = 50;
+int aspect_ratio_factor_step = 10;
+int need_screen_cleared = 0;
+
+#undef X
+#define X(a, b) b,
 const char *resume_options_str[] = {RESUME_OPTIONS};
 
 extern int SaveStateStatus[10];
@@ -191,15 +198,14 @@ void init_menu_SDL(){
         MENU_ERROR_PRINTF("ERROR in init_menu_SDL: Could not open menu font %s, %s\n", MENU_FONT_NAME_SMALL_INFO, SDL_GetError());
     }
 
-    /// ----- Copy virtual_hw_screen at init ------
-    virtual_hw_screen = screen;
+    /// ----- Create SDL surfaces ------
     backup_hw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
-        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+        hw_screen->w, hw_screen->h, 32, 0, 0, 0, 0);
     if(backup_hw_screen == NULL){
         MENU_ERROR_PRINTF("ERROR Could not create backup_hw_screen: %s\n", SDL_GetError());
     }
     draw_screen = SDL_CreateRGBSurface(SDL_SWSURFACE,
-        virtual_hw_screen->w, virtual_hw_screen->h, 32, 0, 0, 0, 0);
+        hw_screen->w, hw_screen->h, 32, 0, 0, 0, 0);
     if(draw_screen == NULL){
         MENU_ERROR_PRINTF("ERROR Could not create draw_screen: %s\n", SDL_GetError());
     }
@@ -411,7 +417,7 @@ void init_menu_zones(){
     /// Init Load Menu
     add_menu_zone(MENU_TYPE_LOAD);
     /// Init Aspect Ratio Menu
-    //add_menu_zone(MENU_TYPE_ASPECT_RATIO);
+    add_menu_zone(MENU_TYPE_ASPECT_RATIO);
     /// Init Exit Menu
     add_menu_zone(MENU_TYPE_EXIT);
     /// Init Powerdown Menu
@@ -491,7 +497,7 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
     menu_blit_window.y = scroll;
     menu_blit_window.h = SCREEN_VERTICAL_SIZE;
     if(SDL_BlitSurface(menu_zone_surfaces[prevItem], &menu_blit_window, draw_screen, NULL)){
-        MENU_ERROR_PRINTF("ERROR Could not Blit surface on virtual_hw_screen: %s\n", SDL_GetError());
+        MENU_ERROR_PRINTF("ERROR Could not Blit surface on draw_screen: %s\n", SDL_GetError());
     }
 
     /// --------- Blit new menu Zone going in (only during animations) ----------
@@ -619,13 +625,13 @@ void menu_screen_refresh(int menuItem, int prevItem, int scroll, uint8_t menu_co
             SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
             break;
 
-        /*case MENU_TYPE_ASPECT_RATIO:
+        case MENU_TYPE_ASPECT_RATIO:
             sprintf(text_tmp, "<   %s   >", aspect_ratio_name[aspect_ratio]);
             text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
             text_pos.x = (draw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
             text_pos.y = draw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + padding_y_from_center_menu_zone;
             SDL_BlitSurface(text_surface, NULL, draw_screen, &text_pos);
-            break;*/
+            break;
 
         case MENU_TYPE_EXIT:
         case MENU_TYPE_POWERDOWN:
@@ -693,8 +699,8 @@ void run_menu_loop()
     int prevItem=menuItem;
 
     /// ------ Copy currently displayed screen -------
-    if(SDL_BlitSurface(virtual_hw_screen, NULL, backup_hw_screen, NULL)){
-        MENU_ERROR_PRINTF("ERROR Could not copy virtual_hw_screen: %s\n", SDL_GetError());
+    if(SDL_BlitSurface(hw_screen, NULL, backup_hw_screen, NULL)){
+        MENU_ERROR_PRINTF("ERROR Could not copy hw_screen: %s\n", SDL_GetError());
     }
     /*uint16_t *dst_virtual = (uint16_t*) sal_VirtualVideoGetBuffer();
     memcpy(backup_hw_screen->pixels, dst_virtual,
@@ -826,12 +832,12 @@ void run_menu_loop()
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
-                        /*else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                        else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
                             MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
                             aspect_ratio = (!aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(aspect_ratio-1);
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
-                        }*/
+                        }
                         break;
 
                     case SDLK_r:
@@ -895,12 +901,12 @@ void run_menu_loop()
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
                         }
-                        /*else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
+                        else if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
                             MENU_DEBUG_PRINTF("Aspect Ratio UP\n");
                             aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
                             /// ------ Refresh screen ------
                             screen_refresh = 1;
-                        }*/
+                        }
                         break;
 
                     case SDLK_a:

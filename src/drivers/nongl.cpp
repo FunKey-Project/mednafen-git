@@ -159,6 +159,7 @@ static void BlitIScale(const MDFN_Surface *src_surface, const MDFN_Rect &sr, MDF
 {
  //puts("IScale");
  const uint32 src_pitchinpix = src_surface->pitchinpix;
+ //printf("src_pitchinpix: %d\n", src_pitchinpix);
  int32 dpitch_diff;
 
  T *src_row, *dest_row;
@@ -402,7 +403,8 @@ void MDFN_StretchBlitSurface(const MDFN_Surface* src_surface, const MDFN_Rect& s
  o_sr = *original_src_rect;
  dr = dest_rect;
 
- //printf("%d:%d, %d:%d, %d:%d\n", sr.x, sr.w, sr.y, sr.h, src_surface->w, src_surface->h);
+ //printf("src %d:%d, %d:%d, %d:%d\n", sr.x, sr.w, sr.y, sr.h, src_surface->w, src_surface->h);
+ //printf("dst %d:%d, %d:%d, %d:%d\n", dr.x, dr.w, dr.y, dr.h, dest_surface->w, dest_surface->h);
 
  if(rotated != MDFN_ROTATE0)
  {
@@ -438,10 +440,14 @@ void MDFN_StretchBlitSurface(const MDFN_Surface* src_surface, const MDFN_Rect& s
  {
   switch(source_alpha ? (int)src_surface->format.Ashift : -1)
   {
-   case -1:  if((dw_to_sw_ratio == dh_to_sh_ratio) && dw_to_sw_ratio <= 5)
+   case -1:  
+       if((dw_to_sw_ratio == dh_to_sh_ratio) && dw_to_sw_ratio <= 5){
 	      nnx(dw_to_sw_ratio, src_surface, sr, dest_surface, dr);
-	     else	
+       }
+	     else{
 	      BlitIScale<uint32, 31>(src_surface, sr, dest_surface, dr, dw_to_sw_ratio, dh_to_sh_ratio);
+        //printf("BlitIScale %f, %f\n", dw_to_sw_ratio, dh_to_sh_ratio);
+       }
 	     break;
 
    case  0:  BlitIScale<uint32,  0>(src_surface, sr, dest_surface, dr, dw_to_sw_ratio, dh_to_sh_ratio);	break;

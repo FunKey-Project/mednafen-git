@@ -836,16 +836,76 @@ void Input_Event(const SDL_Event *event)
 	 //printf("Down: %3u\n", event->key.keysym.sym);
 	 size_t s = event->key.keysym.sym;
 
-	   /// Special case: menu FunKey
-	   if(s == SDLK_q){
-	    printf("Launching menu\n");
-	    run_menu_loop();
-	    break;
-	   }
+   /* Special cases: */
+   /* Menu FunKey */
+   if(s == SDLK_q){
+    printf("Launching menu\n");
+    run_menu_loop();
+    break;
+   }
+   /* Quick shortcut: Changing aspect Ratio */
+   else if(s == SDLK_h){
+    char shell_cmd[100];
+    aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+    if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+      sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+    }
+    else{
+      sprintf(shell_cmd, "%s %d \"     DISPLAY MODE: %s\"",
+        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
+    }
+    //hud_new_msg = 4;
+    FILE *fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+    break;
+   }
+   /* Quick shortcut: Decrease manual aspect Ratio */
+   else if(s == SDLK_j){
+    if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+      aspect_ratio_factor_percent = (aspect_ratio_factor_percent>aspect_ratio_factor_step)?
+        aspect_ratio_factor_percent-aspect_ratio_factor_step:0;
+      need_screen_cleared = 1;
+    }
+    else{
+      aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+    }
+    char shell_cmd[100];
+    sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+      SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+    FILE *fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+    break;
+   }
+   /* Quick shortcut: Increase manual aspect Ratio */
+   else if(s == SDLK_i){
+    if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+      aspect_ratio_factor_percent = (aspect_ratio_factor_percent+aspect_ratio_factor_step<100)?
+        aspect_ratio_factor_percent+aspect_ratio_factor_step:100;
+      need_screen_cleared = 1;
+    }
+    else{
+      aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+    }
+    aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+    char shell_cmd[100];
+    sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+      SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+    FILE *fp = popen(shell_cmd, "r");
+    if (fp == NULL) {
+      printf("Failed to run command %s\n", shell_cmd);
+    }
+    break;
+   }
 
+   /** Normal Handling */
 	 if(s < MKK_COUNT)
 	 {
-          keys_untouched[s] = (keys_untouched[s] & 0x7F) | 0x01;
+    keys_untouched[s] = (keys_untouched[s] & 0x7F) | 0x01;
 	 }
 	}
 	break;

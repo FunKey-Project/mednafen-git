@@ -73,6 +73,7 @@ extern const char *aspect_ratio_name[];
 extern int aspect_ratio;
 extern int aspect_ratio_factor_percent;
 extern int aspect_ratio_factor_step;
+extern int need_screen_cleared;
 extern int stop_menu_loop;
 extern char *mRomName;
 extern char *mRomPath;

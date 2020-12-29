@@ -38,6 +38,8 @@
 #include "help.h"
 #include "video-state.h"
 
+#include "menu.h"
+
 #ifdef WANT_FANCY_SCALERS
 #include "scalebit.h"
 #include "hqxx-common.h"
@@ -469,6 +471,7 @@ static void GenerateDestRect(void)
    nom_width = VideoGI->nominal_width;
    nom_height = VideoGI->nominal_height;
   }
+  MDFNI_printf(_("Original width: %d, Original height: %d\n"), nom_width, nom_height);
 
   if (_video.stretch == 2 || _video.stretch == 3 || _video.stretch == 4)	// Aspect-preserve stretch
   {
@@ -1181,8 +1184,10 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
      else
      {
       SDL_to_MDFN_Surface_Wrapper m_surface(screen);
-
       MDFN_StretchBlitSurface(eff_source_surface, eff_src_rect, &m_surface, dest_rect, false, _video.scanlines, &eff_src_rect, CurGame->rotated, InterlaceField);
+      
+      // This is a nice place to replace by this as well (instead of the 2 lines above):
+      //flip_NNOptimized_AllowOutOfScreen(eff_source_surface, screen, screen->w, screen->h);
      }
    }
 }
@@ -1226,39 +1231,6 @@ static void SubBlit(const MDFN_Surface *source_surface, const MDFN_Rect &src_rec
 
 
 
-/*void SDL_Rotate_270(SDL_Surface * dst, SDL_Surface * src){
-  int i, j;
-
-    /// --- Checking for right pixel format ---
-    //MENU_DEBUG_PRINTF("Source bpb = %d, Dest bpb = %d\n", src->format->BitsPerPixel, dst->format->BitsPerPixel);
-    if(src->format->BitsPerPixel != dst->format->BitsPerPixel){
-      printf("Error in SDL_Rotate_270, Wrong src pixel format: %d bpb, expected: 16 bpb\n", src->format->BitsPerPixel);
-      printf("Error in SDL_Rotate_270, dst (%d bpb) and src (%d bpb) have a different pitch\n",
-        dst->format->BitsPerPixel, src->format->BitsPerPixel);
-      return;
-    }
-
-    /// --- Checking if same dimensions ---
-    if(dst->w != src->w || dst->h != src->h){
-      printf("Error in SDL_Rotate_270, dst (%dx%d) and src (%dx%d) have different dimensions\n",
-        dst->w, dst->h, src->w, src->h);
-      return;
-    }
-
-
-    uint8_t *source_pixels = (uint8_t*) src->pixels;
-    uint8_t *dest_pixels = (uint8_t*) dst->pixels;
-
-  /// --- Pixel copy and rotation (270) ---
-  uint8_t *cur_p_src, *cur_p_dst;
-  for(i=0; i<src->h; i++){
-    for(j=0; j<src->w; j++){
-      cur_p_src = source_pixels + (i*src->w + j)*src->pitch;
-      cur_p_dst = dest_pixels + ((dst->h-1-j)*dst->w + i)*dst->pitch;
-      memcpy(cur_p_dst, cur_p_src, dst->pitch);
-    }
-  }
-}*/
 
 
 
@@ -1296,6 +1268,52 @@ void SDL_Rotate_270(SDL_Surface * virtual_hw_surface, SDL_Surface * hw_surface){
   }
 }
 
+/* Clear SDL screen (for multiple-buffering) */
+void clear_screen(SDL_Surface *dst_surface) {
+  memset(dst_surface->pixels, 0, dst_surface->w*dst_surface->h*dst_surface->format->BytesPerPixel);
+}
+
+
+/// Nearest neighboor optimized with possible out of screen coordinates (for cropping)
+static void flip_NNOptimized_AllowOutOfScreen(const MDFN_Surface *src_surface, SDL_Surface *dst_surface, int new_w, int new_h) {
+  int w1 = src_surface->w;
+  int h1 = src_surface->h;
+  int w2 = new_w;
+  int h2 = new_h;
+  int x_ratio = (int) ((w1 << 16) / w2);
+  int y_ratio = (int) ((h1 << 16) / h2);
+  int x2, y2;
+
+  /// --- Compute padding for centering when out of bounds ---
+  int y_padding = (RES_HW_SCREEN_VERTICAL - new_h) / 2;
+  int x_padding = 0;
+  if (w2 > RES_HW_SCREEN_HORIZONTAL) {
+    x_padding = (w2 - RES_HW_SCREEN_HORIZONTAL) / 2 + 1;
+  }
+  int x_padding_ratio = x_padding * w1 / w2;
+  //printf("w1=%d, h1=%d, w2=%d, h2=%d\n", w1, h1, w2, h2);
+
+  for (int i = 0; i < h2; i++) {
+    if (i >= RES_HW_SCREEN_VERTICAL) {
+      continue;
+    }
+
+    uint32_t *t = ((uint32_t *)dst_surface->pixels) + ((i + y_padding) * ((w2 > RES_HW_SCREEN_HORIZONTAL) ? RES_HW_SCREEN_HORIZONTAL : w2)) ;
+    y2 = (i * y_ratio) >> 16;
+    uint32_t *p = src_surface->pixels + (y2 * w1 + x_padding_ratio);
+    int rat = 0;
+    for (int j = 0; j < w2; j++) {
+      if (j >= RES_HW_SCREEN_HORIZONTAL) {
+        continue;
+      }
+      x2 = rat >> 16;
+      *t++ = p[x2];
+      rat += x_ratio;
+      //printf("y=%d, x=%d, y2=%d, x2=%d, (y2*w1)+x2=%d\n", i, j, y2, x2, (y2 * src_surface->w) + x2);
+    }
+  }
+}
+
 
 
 void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int32 *LineWidths, const int InterlaceField, const bool take_ssnapshot)
@@ -1312,6 +1330,60 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
  //
  if(!(SDL_GetAppState() & SDL_APPACTIVE))
   return;
+
+//#define FUNKEY_FAST_BLIT
+#ifdef FUNKEY_FAST_BLIT
+  
+  /* Correct colors */
+  msurface->SetFormat(*pf_needed, TRUE);
+
+  /* Clear screen if AR changed */
+  static int prev_aspect_ratio = aspect_ratio;
+  if (prev_aspect_ratio != aspect_ratio || need_screen_cleared) {
+    prev_aspect_ratio = aspect_ratio;
+    clear_screen(hw_screen);
+    need_screen_cleared = 0;
+  }
+
+  /* Scaler based on aspect ratio */
+  uint32_t h_scaled, h_zoomed;
+  switch (aspect_ratio) {
+    case ASPECT_RATIOS_TYPE_STRETCHED: 
+    /* Stretched NN*/
+    flip_NNOptimized_AllowOutOfScreen(msurface, hw_screen, hw_screen->w, hw_screen->h);
+    break;
+
+    case ASPECT_RATIOS_TYPE_CROPPED:
+    flip_NNOptimized_AllowOutOfScreen(msurface, hw_screen,
+      MAX(msurface->w*RES_HW_SCREEN_VERTICAL/msurface->h, RES_HW_SCREEN_HORIZONTAL),
+      RES_HW_SCREEN_VERTICAL);
+    break;
+
+    case ASPECT_RATIOS_TYPE_SCALED:
+    flip_NNOptimized_AllowOutOfScreen(msurface, hw_screen,
+      RES_HW_SCREEN_HORIZONTAL,
+      MIN(msurface->h*RES_HW_SCREEN_HORIZONTAL/msurface->w, RES_HW_SCREEN_VERTICAL));
+    break;
+
+    case ASPECT_RATIOS_TYPE_MANUAL:
+    h_scaled = MIN(msurface->h*RES_HW_SCREEN_HORIZONTAL/msurface->w,
+                            RES_HW_SCREEN_VERTICAL);
+    h_zoomed = MIN(h_scaled + aspect_ratio_factor_percent*(RES_HW_SCREEN_VERTICAL - h_scaled)/100,
+                            RES_HW_SCREEN_VERTICAL);
+    flip_NNOptimized_AllowOutOfScreen(msurface, hw_screen,
+        MAX(msurface->w*h_zoomed/msurface->h, RES_HW_SCREEN_HORIZONTAL),
+        MIN(h_zoomed, RES_HW_SCREEN_VERTICAL));
+    break;
+
+    default:
+    printf("Aspect ratio not handled: %d\n", aspect_ratio);
+    aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
+    break;
+  }
+
+  SDL_Flip(hw_screen);
+
+#else //FUNKEY_FAST_BLIT
 
  if(NeedClear)
  {
@@ -1360,6 +1432,8 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
  src_rect.w = DisplayRect->w;
  src_rect.y = DisplayRect->y;
  src_rect.h = DisplayRect->h;
+
+ //printf("********** src_rect={%d, %d} %dx%d\n", src_rect.x, src_rect.y, src_rect.w, src_rect.h);
 
  // This drawing to the game's video surface can cause visual glitches, but better than killing performance which kind of
  // defeats the purpose of the FPS display.
@@ -1596,6 +1670,8 @@ void BlitScreen(MDFN_Surface *msurface, const MDFN_Rect *DisplayRect, const int3
    SDL_BlitSurface(screen, NULL, hw_screen, NULL);
    SDL_Flip(hw_screen);
  }
+
+#endif //FUNKEY_FAST_BLIT
 }
 
 void Video_PtoV(const int in_x, const int in_y, int32 *out_x, int32 *out_y)
