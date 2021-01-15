@@ -848,11 +848,11 @@ void Input_Event(const SDL_Event *event)
     char shell_cmd[100];
     aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
     if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
-      sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+      sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
         SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     }
     else{
-      sprintf(shell_cmd, "%s %d \"     DISPLAY MODE: %s\"",
+      sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: %s\"",
         SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
     }
     //hud_new_msg = 4;
@@ -873,7 +873,7 @@ void Input_Event(const SDL_Event *event)
       aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
     }
     char shell_cmd[100];
-    sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+    sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
       SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     FILE *fp = popen(shell_cmd, "r");
     if (fp == NULL) {
@@ -893,7 +893,7 @@ void Input_Event(const SDL_Event *event)
     }
     aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
     char shell_cmd[100];
-    sprintf(shell_cmd, "%s %d \"DISPLAY MODE: MANUAL ZOOM %d%%%%\"",
+    sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
       SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     FILE *fp = popen(shell_cmd, "r");
     if (fp == NULL) {
