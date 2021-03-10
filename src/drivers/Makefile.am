@@ -9,7 +9,7 @@ libmdfnsdl_a_SOURCES += console.cpp cheat.cpp fps.cpp video-state.cpp remote.cpp
 
 libmdfnsdl_a_SOURCES += overlay.cpp
 
-libmdfnsdl_a_SOURCES += menu.cpp
+libmdfnsdl_a_SOURCES += menu.cpp configfile.cpp
 
 libmdfnsdl_a_SOURCES += video.cpp
 

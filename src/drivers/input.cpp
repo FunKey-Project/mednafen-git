@@ -32,6 +32,7 @@
 #include "debugger.h"
 #include "help.h"
 #include "rmdui.h"
+#include "configfile.h"
 
 extern JoystickManager *joy_manager;
 
@@ -860,6 +861,9 @@ void Input_Event(const SDL_Event *event)
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
     }
+    
+    // Save config file
+    configfile_save(cfg_file_rom);
     break;
    }
    /* Quick shortcut: Decrease manual aspect Ratio */
@@ -879,6 +883,9 @@ void Input_Event(const SDL_Event *event)
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
     }
+    
+    // Save config file
+    configfile_save(cfg_file_rom);
     break;
    }
    /* Quick shortcut: Increase manual aspect Ratio */
@@ -899,6 +906,9 @@ void Input_Event(const SDL_Event *event)
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
     }
+    
+    // Save config file
+    configfile_save(cfg_file_rom);
     break;
    }
 

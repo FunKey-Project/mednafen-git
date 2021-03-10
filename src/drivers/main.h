@@ -8,6 +8,7 @@
 #include "config.h"
 #include "args.h"
 #include "menu.h"
+#include "configfile.h"
 
 #include <SDL.h>
 #include <SDL/SDL_ttf.h>
