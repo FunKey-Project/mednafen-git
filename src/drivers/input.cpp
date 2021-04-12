@@ -32,7 +32,7 @@
 #include "debugger.h"
 #include "help.h"
 #include "rmdui.h"
-#include "configfile.h"
+#include "configfile_fk.h"
 
 extern JoystickManager *joy_manager;
 

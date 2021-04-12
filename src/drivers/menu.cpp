@@ -18,7 +18,7 @@
 #include "main.h"
 #include "video.h"
 #include "menu.h"
-#include "configfile.h"
+#include "configfile_fk.h"
 #include "../general.h"
 
 #ifdef WIN32

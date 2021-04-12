@@ -39,7 +39,7 @@
 #include "video-state.h"
 
 #include "menu.h"
-#include "configfile.h"
+#include "configfile_fk.h"
 
 #ifdef WANT_FANCY_SCALERS
 #include "scalebit.h"

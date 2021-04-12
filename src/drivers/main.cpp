@@ -77,7 +77,7 @@ char *quick_save_file = NULL;
 char *cfg_file_default = NULL;
 char *cfg_file_rom = NULL;
 static char *cfg_file_default_name = "default_config";
-static char *cfg_file_extension = "cfg";
+static char *cfg_file_extension = "fkcfg";
 int mQuickSaveAndPoweroff=0;
 bool found_quick_save_file = false;
 

@@ -133,7 +133,7 @@ libmdfnsdl_a_LIBADD =
 am__libmdfnsdl_a_SOURCES_DIST = main.cpp input.cpp args.cpp help.cpp \
 	ers.cpp sound.cpp netplay.cpp input-config.cpp console.cpp \
 	cheat.cpp fps.cpp video-state.cpp remote.cpp rmdui.cpp \
-	overlay.cpp menu.cpp configfile.cpp video.cpp nongl.cpp \
+	overlay.cpp menu.cpp configfile_fk.cpp video.cpp nongl.cpp \
 	nnx.cpp thread_win32.cpp thread_sdl.cpp hqxx-common.cpp \
 	hq2x.cpp hq3x.cpp hq4x.cpp scale2x.c scale3x.c scalebit.c \
 	2xSaI.cpp Joystick.cpp Joystick_SDL.cpp Joystick_Linux.cpp \
@@ -158,7 +158,7 @@ am_libmdfnsdl_a_OBJECTS = main.$(OBJEXT) input.$(OBJEXT) \
 	netplay.$(OBJEXT) input-config.$(OBJEXT) console.$(OBJEXT) \
 	cheat.$(OBJEXT) fps.$(OBJEXT) video-state.$(OBJEXT) \
 	remote.$(OBJEXT) rmdui.$(OBJEXT) \
-	overlay.$(OBJEXT) menu.$(OBJEXT) configfile.$(OBJEXT) \
+	overlay.$(OBJEXT) menu.$(OBJEXT) configfile_fk.$(OBJEXT) \
 	video.$(OBJEXT) nongl.$(OBJEXT) nnx.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) Joystick.$(OBJEXT) \
 	Joystick_SDL.$(OBJEXT) $(am__objects_4) $(am__objects_5) \
@@ -418,7 +418,7 @@ noinst_LIBRARIES = libmdfnsdl.a
 libmdfnsdl_a_SOURCES = main.cpp input.cpp args.cpp help.cpp ers.cpp \
 	sound.cpp netplay.cpp input-config.cpp console.cpp cheat.cpp \
 	fps.cpp video-state.cpp remote.cpp rmdui.cpp \
-	overlay.cpp menu.cpp configfile.cpp video.cpp nongl.cpp nnx.cpp \
+	overlay.cpp menu.cpp configfile_fk.cpp video.cpp nongl.cpp nnx.cpp \
 	$(am__append_1) $(am__append_2) $(am__append_3) Joystick.cpp \
 	Joystick_SDL.cpp $(am__append_4) $(am__append_5) \
 	$(am__append_6)
@@ -494,7 +494,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memdebugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/menu.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configfile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configfile_fk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netplay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nnx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nongl.Po@am__quote@
