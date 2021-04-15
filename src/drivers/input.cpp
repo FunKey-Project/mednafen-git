@@ -860,7 +860,10 @@ void Input_Event(const SDL_Event *event)
     FILE *fp = popen(shell_cmd, "r");
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
+    } else {
+      pclose(fp);
     }
+    
     
     // Save config file
     configfile_save(cfg_file_rom);
@@ -882,6 +885,8 @@ void Input_Event(const SDL_Event *event)
     FILE *fp = popen(shell_cmd, "r");
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
+    } else {
+      pclose(fp);
     }
     
     // Save config file
@@ -905,6 +910,8 @@ void Input_Event(const SDL_Event *event)
     FILE *fp = popen(shell_cmd, "r");
     if (fp == NULL) {
       printf("Failed to run command %s\n", shell_cmd);
+    } else {
+      pclose(fp);
     }
     
     // Save config file

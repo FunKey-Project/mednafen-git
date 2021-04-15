@@ -1282,10 +1282,13 @@ static volatile int gte_write = 0;
 /* Quick save and turn off the console */
 void quick_save_and_poweroff()
 {
+    FILE *fp;
+
     printf("Save Instant Play file\n");
 
     /* Send command to cancel any previously scheduled powerdown */
-    if (popen(SHELL_CMD_CANCEL_SCHED_POWERDOWN, "r") == NULL)
+    fp = popen(SHELL_CMD_CANCEL_SCHED_POWERDOWN, "r");
+    if (fp == NULL)
     {
         /* Countdown is still ticking, so better do nothing
 	   than start writing and get interrupted!
@@ -1293,6 +1296,7 @@ void quick_save_and_poweroff()
         printf("Failed to cancel scheduled shutdown\n");
 	exit(0);
     }
+    pclose(fp);
 
     /* Quick Save  */
     MDFNI_SaveState(quick_save_file, NULL, NULL, NULL, NULL);
