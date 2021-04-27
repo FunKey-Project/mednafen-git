@@ -857,13 +857,7 @@ void Input_Event(const SDL_Event *event)
         SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
     }
     //hud_new_msg = 4;
-    FILE *fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    } else {
-      pclose(fp);
-    }
-    
+    system(shell_cmd);
     
     // Save config file
     configfile_save(cfg_file_rom);
@@ -882,12 +876,7 @@ void Input_Event(const SDL_Event *event)
     char shell_cmd[100];
     sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
       SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
-    FILE *fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    } else {
-      pclose(fp);
-    }
+    system(shell_cmd);
     
     // Save config file
     configfile_save(cfg_file_rom);
@@ -907,12 +896,7 @@ void Input_Event(const SDL_Event *event)
     char shell_cmd[100];
     sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
       SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
-    FILE *fp = popen(shell_cmd, "r");
-    if (fp == NULL) {
-      printf("Failed to run command %s\n", shell_cmd);
-    } else {
-      pclose(fp);
-    }
+    system(shell_cmd);
     
     // Save config file
     configfile_save(cfg_file_rom);
