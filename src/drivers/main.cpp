@@ -1303,7 +1303,7 @@ void quick_save_and_poweroff()
 
     /* Perform Instant Play save and shutdown */
     execlp(SHELL_CMD_INSTANT_PLAY, SHELL_CMD_INSTANT_PLAY,
-	   prog_name, "-fs", "1", "--loadStateFile", quick_save_file, mRomName, NULL);
+	"save", prog_name, "-fs", "1", "--loadStateFile", quick_save_file, mRomName, NULL);
 
     /* Should not be reached */
     printf("Failed to perform Instant Play save and shutdown\n");
