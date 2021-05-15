@@ -850,11 +850,11 @@ void Input_Event(const SDL_Event *event)
     aspect_ratio = (aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
     if(aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
       sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
-        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+        SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     }
     else{
       sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: %s\"",
-        SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
+        SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_name[aspect_ratio]);
     }
     //hud_new_msg = 4;
     system(shell_cmd);
@@ -875,7 +875,7 @@ void Input_Event(const SDL_Event *event)
     }
     char shell_cmd[100];
     sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
-      SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+      SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     system(shell_cmd);
     
     // Save config file
@@ -895,7 +895,7 @@ void Input_Event(const SDL_Event *event)
     aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
     char shell_cmd[100];
     sprintf(shell_cmd, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
-      SHELL_CMD_NOTIF, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
+      SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_factor_percent);
     system(shell_cmd);
     
     // Save config file
